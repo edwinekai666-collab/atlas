@@ -191,6 +191,25 @@
     .big-preview img { width: 100%; height: 100%; max-height: 560px; object-fit: contain; }
     .editor-form { display: grid; gap: 10px; }
     .source { color: var(--accent); font-size: 12px; text-decoration: none; word-break: break-all; }
+    .cloud-status { display: inline-flex; align-items: center; gap: 7px; min-height: 31px; padding: 0 11px; border: 1px solid var(--soft-line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 12px; white-space: nowrap; }
+    .cloud-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+    .cloud-status.ready::before { background: #34c759; }
+    .cloud-status.syncing::before { background: #ff9f0a; }
+    .cloud-status.error::before { background: var(--danger); }
+    .cloud-status.offline::before { background: #8e8e93; }
+    .auth-drawer { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; background: rgba(0,0,0,.48); z-index: 40; }
+    .auth-drawer.show { display: grid; }
+    .auth-card { width: min(430px,100%); padding: 20px; }
+    .auth-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .auth-head p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .auth-form { display: grid; gap: 10px; }
+    .auth-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .auth-actions .primary { grid-column: 1 / -1; }
+    .auth-message { min-height: 20px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .auth-message.error { color: var(--danger); }
+    .auth-message.success { color: #248a3d; }
+    .sync-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .cloud-only-hint { color: var(--accent); }
     @media (max-width: 900px) { .topbar { align-items: flex-start; flex-direction: column; } .hero { min-height: 500px; padding: 64px 18px 132px; border-radius: 24px; } .hero h1 { font-size: 34px; } .stats { grid-template-columns: repeat(2, minmax(0,1fr)); min-width: 0; width: 100%; } .capture, .grid-2, .grid-3, .filters, .editor-grid, .analysis-card, .link-field { grid-template-columns: 1fr; } .page { padding: 12px; } .library { grid-template-columns: 1fr; padding: 12px; } .top-actions { width: 100%; justify-content: flex-start; } }
   </style>
 </head>
@@ -201,6 +220,8 @@
       <div><h1>Atlas</h1><small>好的设计、审美、技能、工具与方法</small></div>
     </div>
     <div class="top-actions">
+      <span class="cloud-status offline" id="cloudStatus">本地模式</span>
+      <button class="btn" id="authBtn">登录云端</button>
       <button class="btn theme-toggle" id="themeBtn">深色</button>
       <button class="btn" id="exportBtn">导出</button>
       <button class="btn" id="importBtn">导入</button>
@@ -223,7 +244,7 @@
         <div id="dropContent">
           <strong>添加图片参考</strong>
           <p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p>
-          <span class="hint">本地保存，不上传服务器</span>
+          <span class="hint" id="uploadHint">本地保存；登录后会永久同步到云端</span>
         </div>
       </div>
       <div class="form panel">
@@ -272,8 +293,30 @@
       <div class="editor-grid"><div class="big-preview" id="editPreview"></div><div class="editor-form" id="editForm"></div></div>
     </div>
   </div>
+  <div class="auth-drawer" id="authDrawer">
+    <div class="auth-card panel">
+      <div class="auth-head">
+        <div><h2>Atlas 云端同步</h2><p id="authSubtitle">登录后，你的收藏可以在手机和电脑之间同步。</p></div>
+        <button class="btn small" id="authCloseBtn" type="button">关闭</button>
+      </div>
+      <div class="auth-form" id="authForm">
+        <div><div class="label">邮箱</div><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div><div class="label">密码</div><input id="authPassword" type="password" autocomplete="current-password" placeholder="至少 6 位字符"></div>
+        <div class="auth-actions"><button class="btn primary" id="signInBtn" type="button">登录</button><button class="btn" id="signUpBtn" type="button">注册账号</button><button class="btn" id="magicLinkBtn" type="button">发送魔法链接</button></div>
+        <p class="auth-message" id="authMessage"></p>
+      </div>
+      <div class="auth-form hide" id="accountForm">
+        <p class="sync-note">当前账号：<strong id="accountEmail"></strong></p>
+        <p class="sync-note">云端模式会保存收藏记录和你上传的图片。自动读取的第三方链接封面仍可能受原网站限制。</p>
+        <div class="auth-actions"><button class="btn primary" id="syncLocalBtn" type="button">上传本地收藏</button><button class="btn" id="signOutBtn" type="button">退出登录</button></div>
+        <p class="auth-message" id="accountMessage"></p>
+      </div>
+    </div>
+  </div>
   <input id="importFile" type="file" accept="application/json" hidden>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <script>
     const storeKey = 'atlas-universal-library-v4';
     const oldKeys = ['visual-atlas-reference-box-v3'];
@@ -293,6 +336,14 @@
     let selectedId = '';
     let linkAnalysis = null;
     let analyzeTimer = 0;
+    let supabaseClient = null;
+    let currentUser = null;
+    let cloudMode = false;
+    let cloudReady = false;
+    let cloudSyncTimer = 0;
+    let cloudSyncPromise = Promise.resolve();
+    let offlineSnapshot = [];
+    const localBackupKey = storeKey + '-offline-backup';
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
 
@@ -301,9 +352,10 @@
       for (const key of oldKeys) { try { const old = JSON.parse(localStorage.getItem(key) || 'null'); if (Array.isArray(old)) return old.map(normalize); } catch(e) {} }
       return demo;
     }
-    function normalize(item){ const kind=item.kind||guessKind(item); const category=item.category||'待整理'; const ai=isAiContext(kind, category); return { id:item.id||uid(), kind, title:item.title||'未命名收藏', category, url:item.url||'', summary:item.summary || (!ai ? item.prompt || '' : ''), prompt: ai ? item.prompt||'' : '', tags:item.tags||['待整理'], note:item.note||'', image:item.image||'', createdAt:item.createdAt||Date.now() }; }
+    function normalize(item){ const kind=item.kind||guessKind(item); const category=item.category||'待整理'; const ai=isAiContext(kind, category); return { id:item.id||uid(), kind, title:item.title||'未命名收藏', category, url:item.url||'', summary:item.summary || (!ai ? item.prompt || '' : ''), prompt: ai ? item.prompt||'' : '', tags:Array.isArray(item.tags) ? item.tags : tagsFrom(item.tags), note:item.note||'', image:item.image||'', imagePath:item.imagePath||item.image_path||'', imageUrl:item.imageUrl||item.image_url||'', createdAt:item.createdAt||Date.now(), updatedAt:item.updatedAt||item.updated_at||item.createdAt||Date.now() }; }
     function guessKind(item){ if(item.category && /IP|品牌|视觉|产品|UI|UX|包装|作品集/.test(item.category)) return '设计项目'; if(item.prompt && item.category && item.category.includes('Prompt')) return 'AI Prompt'; if(item.url) return '链接'; if(item.image) return '图片'; return '灵感'; }
-    function saveItems(){ localStorage.setItem(storeKey, JSON.stringify(items.map(normalize))); }
+    function writeLocalCache(){ localStorage.setItem(storeKey, JSON.stringify(items.map(normalize))); }
+    function saveItems(){ writeLocalCache(); if(!cloudMode) localStorage.setItem(localBackupKey, JSON.stringify(items.map(normalize))); if(cloudReady && currentUser) queueCloudSync(); }
     function uid(){ return 'a-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
     function esc(v){ return String(v||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function attr(v){ return esc(v).replace(/'/g,'&#39;'); }
@@ -332,6 +384,14 @@
       $('#importBtn').onclick = () => $('#importFile').click();
       $('#importFile').onchange = e => e.target.files[0] && importData(e.target.files[0]);
       $('#clearBtn').onclick = () => { if(confirm('清空当前浏览器里的收藏？')) { items=[]; saveItems(); render(); } };
+      $('#authBtn').onclick = openAuth;
+      $('#authCloseBtn').onclick = closeAuth;
+      $('#authDrawer').onclick = e => { if(e.target.id === 'authDrawer') closeAuth(); };
+      $('#signInBtn').onclick = signIn;
+      $('#signUpBtn').onclick = signUp;
+      $('#magicLinkBtn').onclick = sendMagicLink;
+      $('#signOutBtn').onclick = signOut;
+      $('#syncLocalBtn').onclick = syncOfflineBackup;
       $('#closeBtn').onclick = closeDrawer;
       $('#drawer').onclick = e => { if(e.target.id === 'drawer') closeDrawer(); };
       $('#deleteBtn').onclick = deleteSelected;
@@ -352,6 +412,120 @@
       saveItems();
       updatePromptField();
       render();
+      initCloud();
+    }
+    function cloudConfig(){ const config = window.ATLAS_SUPABASE_CONFIG || {}; return { url:String(config.url||'').trim(), key:String(config.key||config.anonKey||'').trim() }; }
+    function cloudConfigured(){ const config = cloudConfig(); return Boolean(window.supabase && /^https:\/\/[^\s]+\.supabase\.co$/i.test(config.url) && config.key && !/^YOUR_/i.test(config.key)); }
+    function setCloudStatus(state, text){ const el=$('#cloudStatus'); if(!el) return; el.className='cloud-status '+state; el.textContent=text; $('#uploadHint').textContent = state === 'ready' ? '已同步到云端；自动读取的第三方封面仍可能受原网站限制' : state === 'syncing' ? '正在同步图片和收藏记录…' : state === 'error' ? '云端同步失败，当前内容仍保留在本机' : '本地保存；登录后会永久同步到云端'; }
+    function setAuthMessage(text, type){ const el=$('#authMessage'); if(!el) return; el.textContent=text||''; el.className='auth-message'+(type?' '+type:''); }
+    function openAuth(){
+      $('#authDrawer').classList.add('show');
+      if(!cloudConfigured()){ $('#authSubtitle').textContent='先配置 Supabase，登录后才能在手机和电脑之间同步。'; setAuthMessage('还没有配置云端：复制 supabase-config.example.js 为 supabase-config.js，再填入 Project URL 和 publishable/anon key。','error'); return; }
+      setAuthMessage(''); updateAuthPanel();
+    }
+    function closeAuth(){ $('#authDrawer').classList.remove('show'); }
+    function updateAuthPanel(){
+      const loggedIn=Boolean(currentUser);
+      $('#authForm').classList.toggle('hide', loggedIn);
+      $('#accountForm').classList.toggle('hide', !loggedIn);
+      $('#accountEmail').textContent=loggedIn ? (currentUser.email||'当前账号') : '';
+      $('#authSubtitle').textContent=loggedIn ? '你的收藏正在使用云端存储。' : '登录后，你的收藏可以在手机和电脑之间同步。';
+      $('#authBtn').textContent=loggedIn ? '账号与同步' : '登录云端';
+    }
+    async function initCloud(){
+      if(!cloudConfigured()){ setCloudStatus('offline','本地模式'); updateAuthPanel(); return; }
+      try {
+        const config=cloudConfig();
+        supabaseClient=window.supabase.createClient(config.url, config.key, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
+        supabaseClient.auth.onAuthStateChange((_event, session)=>{ setTimeout(()=>handleCloudSession(session),0); });
+        const {data}=await supabaseClient.auth.getSession();
+        await handleCloudSession(data.session);
+      } catch(error){ console.error(error); setCloudStatus('error','云端配置错误'); setAuthMessage('Supabase 初始化失败，请检查 Project URL 和 publishable/anon key。','error'); }
+    }
+    async function handleCloudSession(session){
+      currentUser=session?.user||null;
+      updateAuthPanel();
+      if(!currentUser){ if(cloudMode && offlineSnapshot.length){ items=offlineSnapshot.map(normalize); writeLocalCache(); render(); } cloudMode=false; cloudReady=false; setCloudStatus('offline','未登录'); return; }
+      await loadCloudItems();
+    }
+    function readBackup(){ try { const data=JSON.parse(localStorage.getItem(localBackupKey)||'null'); return Array.isArray(data) ? data.map(normalize) : []; } catch(e){ return []; } }
+    function hasRealItems(list){ return list.some(item=>!['d1','d2','d3'].includes(item.id)); }
+    async function loadCloudItems(){
+      setCloudStatus('syncing','读取云端收藏…');
+      const localBeforeLoad=readBackup();
+      offlineSnapshot=localBeforeLoad;
+      const {data,error}=await supabaseClient.from('library_items').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+      if(error){ console.error(error); cloudMode=false; cloudReady=false; setCloudStatus('error','读取云端失败'); setAuthMessage('读取云端失败：'+error.message,'error'); return; }
+      if(data?.length){ items=await hydrateCloudItems(data.map(rowToItem)); }
+      else if(hasRealItems(localBeforeLoad) && confirm('这个账号还没有收藏。要把当前浏览器里的本地收藏上传到云端吗？')){ items=localBeforeLoad; cloudMode=true; cloudReady=true; await syncNow(); }
+      else { items=[]; }
+      cloudMode=true; cloudReady=true; writeLocalCache(); render(); setCloudStatus('ready','已同步');
+    }
+    function rowToItem(row){ return normalize({id:row.id,kind:row.kind,title:row.title,category:row.category,url:row.url,summary:row.summary,prompt:row.prompt,tags:row.tags,note:row.note,imagePath:row.image_path,imageUrl:row.image_url,createdAt:row.created_at,updatedAt:row.updated_at,image:row.image_url||''}); }
+    async function hydrateCloudItems(list){
+      await Promise.all(list.map(async item=>{ if(item.imagePath){ const url=await signedImageUrl(item.imagePath); if(url) item.image=url; } else if(item.imageUrl) item.image=item.imageUrl; }));
+      return list;
+    }
+    async function signedImageUrl(path){ try { const result=await supabaseClient.storage.from('atlas-assets').createSignedUrl(path,3600); return result.data?.signedUrl||''; } catch(e){ return ''; } }
+    function dataUrlToBlob(dataUrl){ const parts=String(dataUrl||'').split(','); if(parts.length<2) return null; const mime=(parts[0].match(/data:([^;]+);/)||[])[1]||'image/jpeg'; const binary=atob(parts[1]); const bytes=new Uint8Array(binary.length); for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i); return new Blob([bytes],{type:mime}); }
+    function remoteImage(value){ return /^https?:\/\//i.test(String(value||'')); }
+    async function uploadItemImage(item){
+      let blob=null;
+      if(/^data:image\//i.test(item.image||'')) blob=dataUrlToBlob(item.image);
+      else if(!item.imagePath && item.imageUrl && remoteImage(item.imageUrl)){
+        try { const response=await fetchWithTimeout(item.imageUrl,{mode:'cors'},6500); if(response.ok) blob=await response.blob(); } catch(e) { /* Keep the source URL when the host blocks downloads. */ }
+      }
+      if(!blob) return;
+      const path=currentUser.id+'/'+item.id+'.jpg';
+      const {error}=await supabaseClient.storage.from('atlas-assets').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+      if(error) throw error;
+      item.imagePath=path; item.imageUrl=''; item.image=await signedImageUrl(path)||item.image;
+    }
+    function dbRow(item){ return {id:item.id,user_id:currentUser.id,kind:item.kind,title:item.title,category:item.category,url:item.url,summary:item.summary,prompt:item.prompt,tags:item.tags,note:item.note,image_path:item.imagePath||'',image_url:item.imagePath?'':(item.imageUrl||(remoteImage(item.image)?item.image:'')),created_at:new Date(item.createdAt||Date.now()).toISOString(),updated_at:new Date().toISOString()}; }
+    function queueCloudSync(){ clearTimeout(cloudSyncTimer); setCloudStatus('syncing','等待同步…'); cloudSyncTimer=setTimeout(()=>syncNow(),700); }
+    async function syncNow(){
+      if(!cloudReady || !currentUser || !supabaseClient) return;
+      cloudSyncPromise=cloudSyncPromise.then(async()=>{
+        setCloudStatus('syncing','同步中');
+        const normalized=items.map(normalize);
+        for(const item of normalized) await uploadItemImage(item);
+        const {error}=await supabaseClient.from('library_items').upsert(normalized.map(dbRow),{onConflict:'id'});
+        if(error) throw error;
+        const {data:remoteRows}=await supabaseClient.from('library_items').select('id').eq('user_id',currentUser.id);
+        const localIds=new Set(normalized.map(item=>item.id));
+        for(const row of remoteRows||[]) if(!localIds.has(row.id)) await supabaseClient.from('library_items').delete().eq('user_id',currentUser.id).eq('id',row.id);
+        items=normalized; writeLocalCache(); setCloudStatus('ready','已同步'); render();
+      }).catch(error=>{ console.error(error); setCloudStatus('error','同步失败'); setAuthMessage('同步失败：'+(error.message||'请检查 Supabase 表、Storage bucket 和 RLS 策略。'),'error'); });
+      return cloudSyncPromise;
+    }
+    async function signIn(){
+      if(!supabaseClient){ setAuthMessage('请先完成 Supabase 配置。','error'); return; }
+      const email=$('#authEmail').value.trim(), password=$('#authPassword').value;
+      if(!email || !password){ setAuthMessage('请输入邮箱和密码。','error'); return; }
+      setAuthMessage('正在登录…');
+      const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+      if(error) setAuthMessage(error.message,'error'); else setAuthMessage('登录成功，正在读取你的收藏…','success');
+    }
+    async function signUp(){
+      if(!supabaseClient){ setAuthMessage('请先完成 Supabase 配置。','error'); return; }
+      const email=$('#authEmail').value.trim(), password=$('#authPassword').value;
+      if(!email || password.length<6){ setAuthMessage('请输入邮箱，并使用至少 6 位密码。','error'); return; }
+      setAuthMessage('正在创建账号…');
+      const redirectTo=/^https?:/i.test(location.href) ? location.href : undefined;
+      const {data,error}=await supabaseClient.auth.signUp({email,password,options:redirectTo?{emailRedirectTo:redirectTo}:undefined});
+      if(error) setAuthMessage(error.message,'error'); else setAuthMessage(data.session?'账号已创建。':'账号已创建，请去邮箱点击确认链接。','success');
+    }
+    async function sendMagicLink(){
+      if(!supabaseClient){ setAuthMessage('请先完成 Supabase 配置。','error'); return; }
+      const email=$('#authEmail').value.trim(); if(!email){ setAuthMessage('请输入邮箱。','error'); return; }
+      const redirectTo=/^https?:/i.test(location.href) ? location.href : undefined;
+      const {error}=await supabaseClient.auth.signInWithOtp({email,options:redirectTo?{emailRedirectTo:redirectTo}:undefined});
+      setAuthMessage(error ? error.message : '登录链接已发送，请检查邮箱。',error?'error':'success');
+    }
+    async function signOut(){ if(!supabaseClient) return; await supabaseClient.auth.signOut(); closeAuth(); }
+    async function syncOfflineBackup(){
+      const backup=readBackup(); if(!backup.length){ $('#accountMessage').textContent='没有找到可上传的本地收藏。'; return; }
+      items=[...items,...backup.filter(local=>!items.some(item=>item.id===local.id))]; writeLocalCache(); $('#accountMessage').textContent='本地收藏已加入同步队列。'; await syncNow(); render();
     }
     function applyTheme(theme){ document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; localStorage.setItem('atlas-theme', document.documentElement.dataset.theme); $('#themeBtn').textContent = theme === 'dark' ? '浅色' : '深色'; }
     function scheduleLinkAnalysis(){
@@ -493,7 +667,7 @@
       if(!item.tags.length) item.tags = [item.kind, item.category].filter(Boolean).slice(0,2);
       items.unshift(item); saveItems(); resetForm(); render(); openItem(item.id);
     }
-    function resetForm(){ pendingImage=''; linkAnalysis=null; ['titleInput','urlInput','summaryInput','promptInput','noteInput'].forEach(id=>$('#'+id).value=''); $('#kindInput').value='图片'; $('#categoryInput').value='好的设计'; $$('#presetTags .chip').forEach(b=>b.classList.remove('active')); $$('#quickKinds .quick-btn').forEach(b=>b.classList.remove('active')); renderAnalysis('idle'); updatePromptField(); $('#dropContent').innerHTML='<strong>添加图片参考</strong><p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p><span class="hint">本地保存，不上传服务器</span>'; }
+    function resetForm(){ pendingImage=''; linkAnalysis=null; ['titleInput','urlInput','summaryInput','promptInput','noteInput'].forEach(id=>$('#'+id).value=''); $('#kindInput').value='图片'; $('#categoryInput').value='好的设计'; $$('#presetTags .chip').forEach(b=>b.classList.remove('active')); $$('#quickKinds .quick-btn').forEach(b=>b.classList.remove('active')); renderAnalysis('idle'); updatePromptField(); $('#dropContent').innerHTML='<strong>添加图片参考</strong><p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p><span class="hint">'+(cloudMode?'已登录：图片会同步到云端':'本地保存；登录后会永久同步到云端')+'</span>'; }
     function filtered(){ const q=$('#searchInput').value.trim().toLowerCase(); return items.map(normalize).filter(i=>{ const kindOk=activeKind==='全部'||i.kind===activeKind; const catOk=activeCategory==='全部'||i.category===activeCategory; const tagOk=activeTag==='全部'||i.tags.includes(activeTag); const text=[i.kind,i.title,i.category,i.url,i.summary,i.prompt,i.note,...i.tags].join(' ').toLowerCase(); return kindOk && catOk && tagOk && (!q || text.includes(q)); }); }
     function render(){ renderStats(); renderFilters(); renderLibrary(); }
     function renderStats(){ const data=[['全部',items.length],['图片',items.filter(i=>i.image).length],['链接',items.filter(i=>i.url).length],['AI/技能/工具',items.filter(i=>['AI Prompt','技能','工具','方法'].includes(i.kind)).length]]; $('#stats').innerHTML=data.map(s=>'<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join(''); }
@@ -515,7 +689,7 @@
     function openItem(id){ selectedId=id; const i=normalize(selected()); if(!i) return; $('#editPreview').innerHTML=visual(i); $('#editForm').innerHTML='<div class="grid-2"><div><div class="label">标题</div><input id="eTitle" value="'+attr(i.title)+'"></div><div><div class="label">收藏类型</div><select id="eKind">'+kinds.map(k=>'<option '+(k===i.kind?'selected':'')+'>'+esc(k)+'</option>').join('')+'</select></div></div><div><div class="label">分类</div><select id="eCategory">'+categories.map(c=>'<option '+(c===i.category?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><div class="label">链接</div><input id="eUrl" value="'+attr(i.url)+'">'+(i.url?'<a class="source" href="'+attr(i.url)+'" target="_blank">打开链接：'+esc(host(i.url))+'</a>':'')+'</div><div><div class="label">标签，用逗号分隔</div><input id="eTags" value="'+attr(i.tags.join(', '))+'"></div><div><div class="label">项目介绍 / 摘要</div><textarea id="eSummary" placeholder="项目背景、设计目标、视觉特点或链接读取到的网页介绍。">'+esc(i.summary)+'</textarea></div><div class="'+(isAiContext(i.kind,i.category)?'':'hide')+'" id="ePromptBox"><div class="label">AI Prompt / 风格关键词（可选）</div><textarea id="ePrompt" placeholder="只有 AI 生图参考需要填写。">'+esc(i.prompt)+'</textarea></div><div><div class="label">我的判断</div><textarea id="eNote">'+esc(i.note)+'</textarea></div>'; ['Title','Url','Summary','Prompt','Note'].forEach(k=>$('#e'+k).oninput=updateEdit); $('#eKind').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eCategory').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eTags').oninput=updateEdit; $('#drawer').classList.add('show'); }
     function updateEdit(){ const i=selected(); if(!i) return; Object.assign(i,{ title:$('#eTitle').value, kind:$('#eKind').value, category:$('#eCategory').value, url:$('#eUrl').value, tags:tagsFrom($('#eTags').value), summary:$('#eSummary').value, prompt:$('#ePrompt').value, note:$('#eNote').value }); saveItems(); render(); }
     function closeDrawer(){ $('#drawer').classList.remove('show'); }
-    function deleteSelected(){ if(!selectedId) return; items=items.filter(i=>i.id!==selectedId); saveItems(); closeDrawer(); render(); }
+    async function deleteSelected(){ if(!selectedId) return; const item=selected(); items=items.filter(i=>i.id!==selectedId); saveItems(); closeDrawer(); render(); if(cloudReady && currentUser){ if(item?.imagePath) await supabaseClient.storage.from('atlas-assets').remove([item.imagePath]); await supabaseClient.from('library_items').delete().eq('user_id',currentUser.id).eq('id',selectedId); setCloudStatus('ready','已同步'); } }
     function exportData(){ const blob=new Blob([JSON.stringify(items.map(normalize),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='atlas-library.json'; a.click(); URL.revokeObjectURL(a.href); }
     function importData(file){ const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw Error(); items=data.map(normalize); saveItems(); render(); } catch(e){ alert('导入失败，文件格式不对'); } }; r.readAsText(file); }
     init();
