@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+.DS_Store
+supabase-config.js
+Thumbs.db

@@ -194,9 +194,14 @@
     .cloud-status { display: inline-flex; align-items: center; gap: 7px; min-height: 31px; padding: 0 11px; border: 1px solid var(--soft-line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 12px; white-space: nowrap; }
     .cloud-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
     .cloud-status.ready::before { background: #34c759; }
+    .cloud-status.pending::before { background: #ff9f0a; }
     .cloud-status.syncing::before { background: #ff9f0a; }
+    .cloud-status.loading::before { background: var(--accent); }
     .cloud-status.error::before { background: var(--danger); }
     .cloud-status.offline::before { background: #8e8e93; }
+    .sync-button { min-width: 104px; }
+    .sync-button:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .sync-button:disabled { cursor: default; opacity: .72; }
     .auth-drawer { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; background: rgba(0,0,0,.48); z-index: 40; }
     .auth-drawer.show { display: grid; }
     .auth-card { width: min(430px,100%); padding: 20px; }
@@ -210,118 +215,252 @@
     .auth-message.success { color: #248a3d; }
     .sync-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
     .cloud-only-hint { color: var(--accent); }
-    @media (max-width: 900px) { .topbar { align-items: flex-start; flex-direction: column; } .hero { min-height: 500px; padding: 64px 18px 132px; border-radius: 24px; } .hero h1 { font-size: 34px; } .stats { grid-template-columns: repeat(2, minmax(0,1fr)); min-width: 0; width: 100%; } .capture, .grid-2, .grid-3, .filters, .editor-grid, .analysis-card, .link-field { grid-template-columns: 1fr; } .page { padding: 12px; } .library { grid-template-columns: 1fr; padding: 12px; } .top-actions { width: 100%; justify-content: flex-start; } }
+    .save-row { display: flex; align-items: center; gap: 10px; }
+    .save-row .btn { flex: 1; }
+    .save-state { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translate(-50%, 12px); padding: 10px 14px; border: 1px solid var(--soft-line); border-radius: 999px; background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow); font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 980px) { .topbar { align-items: flex-start; flex-direction: column; } .hero { min-height: 500px; padding: 64px 18px 132px; border-radius: 24px; } .hero h1 { font-size: 34px; } .stats { grid-template-columns: repeat(2, minmax(0,1fr)); min-width: 0; width: 100%; } .capture, .grid-2, .grid-3, .filters, .editor-grid, .analysis-card, .link-field { grid-template-columns: 1fr; } .page { padding: 12px; } .library { grid-template-columns: 1fr; padding: 12px; } .top-actions { width: 100%; justify-content: flex-start; } }
+
+    /* Atlas workspace redesign */
+    :root { --ink: #171719; --ink-soft: #343438; --line-strong: rgba(0,0,0,.14); --accent-2: #1772e8; --warm: #f1ede6; --cool: #e8eef7; }
+    [data-theme="dark"] { --ink: #f5f5f7; --ink-soft: #d7d7dc; --line-strong: rgba(255,255,255,.18); --accent-2: #69aaff; --warm: #26231f; --cool: #1d2531; }
+    body { background: var(--bg); }
+    .topbar.workspace-topbar { position: sticky; top: 0; z-index: 50; min-height: 70px; padding: 13px 28px; gap: 24px; background: color-mix(in srgb, var(--bg), transparent 10%); border-bottom: 1px solid var(--soft-line); }
+    .brand-button { cursor: pointer; user-select: none; }
+    .brand-button:focus-visible, .nav-item:focus-visible, .icon-btn:focus-visible, .btn:focus-visible, .text-btn:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 3px; }
+    .brand .mark { width: 35px; height: 35px; border-radius: 11px; background: var(--text); color: var(--bg); }
+    .brand h1 { font-size: 17px; letter-spacing: -.02em; }
+    .brand small { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+    .main-nav { display: flex; align-items: center; gap: 4px; margin-right: auto; }
+    .nav-item { min-height: 34px; padding: 0 11px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 12px; }
+    .nav-item:hover, .nav-item.active { color: var(--text); background: var(--surface-solid); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    .topbar-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 7px; }
+    .global-search, .filter-search { display: flex; align-items: center; gap: 7px; min-width: 168px; height: 36px; padding: 0 10px; border: 1px solid var(--soft-line); border-radius: 9px; background: var(--field); color: var(--muted); }
+    .global-search input, .filter-search input { height: 32px; padding: 0; border: 0; background: transparent; box-shadow: none; font-size: 12px; }
+    .global-search input:focus, .filter-search input:focus { box-shadow: none; }
+    .search-icon { color: var(--subtle); font-size: 18px; line-height: 1; }
+    .icon-btn { width: 35px; height: 35px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--soft-line); border-radius: 9px; background: var(--surface-solid); color: var(--text); font-size: 14px; }
+    .icon-btn:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+    .more-wrap { position: relative; }
+    .more-menu { position: absolute; top: calc(100% + 9px); right: 0; z-index: 80; min-width: 150px; padding: 6px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-solid); box-shadow: var(--shadow); }
+    .more-menu button { width: 100%; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; font-size: 12px; }
+    .more-menu button:hover { background: var(--stage-soft); }
+    .danger-text { color: var(--danger) !important; }
+    .workspace-page { max-width: 1420px; padding: 30px 36px 70px; }
+    .workspace-hero { position: relative; min-height: 235px; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 42px 46px 40px; overflow: hidden; border: 1px solid var(--soft-line); border-radius: 22px; background: var(--stage); box-shadow: var(--soft-shadow); }
+    .workspace-hero::after { content: ""; position: absolute; top: -80px; right: 8%; width: 310px; height: 260px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent-2), transparent 88%), transparent 68%); pointer-events: none; }
+    .hero-copy { position: relative; z-index: 1; max-width: 620px; }
+    .eyebrow { display: block; margin-bottom: 12px; color: var(--subtle); font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+    .workspace-hero h2 { margin: 0; font-size: clamp(32px, 4vw, 58px); letter-spacing: -.055em; line-height: .98; }
+    .workspace-hero p { max-width: 520px; margin: 18px 0 22px; color: var(--muted); font-size: 14px; }
+    .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .large-btn { min-height: 42px; padding: 0 17px; }
+    .ghost-btn { background: transparent; }
+    .hero-index { position: relative; z-index: 1; align-self: flex-start; display: grid; gap: 8px; color: var(--subtle); font-size: 10px; letter-spacing: .14em; text-align: right; }
+    .overview-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(250px, .72fr); gap: 14px; margin-top: 14px; }
+    .panel { border: 1px solid var(--soft-line); border-radius: 13px; background: var(--surface-solid); box-shadow: none; }
+    .spotlight { min-height: 255px; display: grid; grid-template-columns: minmax(0, 1fr) 245px; overflow: hidden; background: var(--ink); color: var(--wall-text); border-color: transparent; }
+    .spotlight-copy { display: flex; flex-direction: column; justify-content: space-between; min-width: 0; padding: 27px 29px; }
+    .spotlight .eyebrow { color: var(--wall-dim); }
+    .spotlight h2 { max-width: 450px; font-size: clamp(22px, 3vw, 34px); letter-spacing: -.04em; }
+    .spotlight p { max-width: 480px; margin: 12px 0 0; color: var(--wall-dim); font-size: 13px; }
+    .spotlight-meta { display: flex; align-items: center; gap: 8px; color: var(--wall-dim); font-size: 11px; }
+    .spotlight .spotlight-action { color: var(--wall-text); border-color: rgba(255,255,255,.24); background: rgba(255,255,255,.08); }
+    .spotlight-media { min-height: 255px; background: var(--stage-soft); overflow: hidden; }
+    .spotlight-media img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .spotlight-media .linkbox, .spotlight-media .promptbox, .spotlight-media .methodbox, .spotlight-media .blank { min-height: 100%; border-radius: 0; }
+    .overview-side { display: grid; gap: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1px; overflow: hidden; background: var(--soft-line); border: 0; }
+    .stat { min-height: 99px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; background: var(--surface-solid); }
+    .stat b { font-size: 28px; font-weight: 650; letter-spacing: -.06em; }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .sync-card { padding: 17px; }
+    .sync-card-top { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 650; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #34c759; }
+    .sync-card-label { margin-left: auto; color: var(--muted); font-size: 10px; font-weight: 500; }
+    .sync-card p { margin: 11px 0 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .text-btn { padding: 0; border: 0; background: transparent; color: var(--accent-2); font-size: 12px; }
+    .content-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; margin-top: 48px; align-items: start; }
+    .category-panel { position: sticky; top: 92px; padding: 16px 12px; }
+    .category-heading { display: flex; align-items: center; justify-content: space-between; margin: 3px 7px 15px; }
+    .category-heading h3 { font-size: 13px; }
+    .category-heading span { color: var(--subtle); font-size: 10px; }
+    .category-group { margin-bottom: 18px; }
+    .category-group-title { margin: 0 7px 7px; color: var(--subtle); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .category-link { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); text-align: left; font-size: 12px; }
+    .category-link:hover, .category-link.active { background: var(--stage-soft); color: var(--text); }
+    .category-link span { color: var(--subtle); font-size: 10px; }
+    .category-clear { margin: 4px 7px 12px; color: var(--accent-2); }
+    .stage-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+    .stage-header .eyebrow { margin-bottom: 8px; }
+    .stage-header h2 { font-size: 24px; letter-spacing: -.035em; }
+    .stage-header p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .stage-actions { display: flex; align-items: center; gap: 10px; }
+    .stage-actions .count { white-space: nowrap; }
+    .filter-toolbar { display: grid; gap: 9px; padding: 10px; margin-bottom: 17px; }
+    .filter-toolbar .filter-search { width: 100%; }
+    .filter-group { display: flex; flex-wrap: wrap; gap: 5px; }
+    .filter-group:empty { display: none; }
+    .filter-group .chip { min-height: 28px; padding: 0 9px; border-radius: 7px; }
+    .library { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 13px; padding: 0; }
+    .card { min-width: 0; padding: 0; overflow: hidden; border: 1px solid var(--soft-line); border-radius: 11px; background: var(--surface-solid); color: var(--text); text-align: left; box-shadow: 0 1px 0 rgba(0,0,0,.02); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .card:hover { transform: translateY(-3px); border-color: var(--line-strong); box-shadow: var(--soft-shadow); }
+    .card:nth-child(4n+1) .thumb { aspect-ratio: 1.35; }
+    .card:nth-child(4n+2) .thumb { aspect-ratio: 1; }
+    .card:nth-child(4n+3) .thumb { aspect-ratio: 1.18; }
+    .card:nth-child(4n+4) .thumb { aspect-ratio: .9; }
+    .thumb { min-height: 130px; background: var(--stage-soft); overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .card-body { padding: 13px 13px 14px; }
+    .badge { display: inline-flex; max-width: 100%; overflow: hidden; color: var(--subtle); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .card .title { margin: 7px 0 0; font-size: 14px; line-height: 1.28; }
+    .card .note { min-height: 36px; margin: 8px 0 10px; font-size: 11px; }
+    .card .tag-row { max-height: 22px; overflow: hidden; }
+    .card .tag { font-size: 10px; }
+    .linkbox, .promptbox, .methodbox, .blank { height: 100%; min-height: 130px; display: grid; place-items: center; align-content: center; gap: 5px; padding: 16px; color: var(--muted); background: linear-gradient(135deg, var(--stage-soft), var(--field)); font-size: 12px; line-height: 1.5; text-align: center; }
+    .promptbox { color: var(--text); background: linear-gradient(135deg, var(--warm), var(--stage-soft)); }
+    .methodbox { color: var(--text); background: linear-gradient(135deg, var(--cool), var(--stage-soft)); }
+    .capture-drawer { position: fixed; inset: 0; z-index: 60; display: none; justify-content: flex-end; background: rgba(0,0,0,.38); }
+    .capture-drawer.show { display: flex; }
+    .capture-sheet { width: min(940px, 100%); height: 100%; max-height: 100vh; overflow: auto; padding: 27px 28px 34px; border-radius: 18px 0 0 18px; background: var(--page-bg); box-shadow: -25px 0 70px rgba(0,0,0,.14); animation: slide-in .2s ease both; }
+    @keyframes slide-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+    .capture-head { display: flex; justify-content: space-between; gap: 25px; padding-bottom: 22px; border-bottom: 1px solid var(--soft-line); }
+    .capture-head h2 { font-size: 28px; letter-spacing: -.04em; }
+    .capture-head p { max-width: 570px; margin: 9px 0 0; color: var(--muted); font-size: 12px; }
+    .capture-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; padding-top: 22px; }
+    .capture-source { display: grid; align-content: start; gap: 12px; }
+    .capture-source .drop { min-height: 260px; display: grid; place-items: center; padding: 16px; border: 1px dashed var(--line-strong); background: var(--surface-solid); text-align: center; }
+    .capture-source .drop.drag { border-color: var(--accent-2); background: var(--accent-soft); }
+    .capture-source .drop strong { font-size: 14px; }
+    .capture-source .drop p { margin: 10px 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .capture-tip { display: grid; grid-template-columns: 31px 1fr; gap: 9px; align-items: start; padding: 12px; border: 1px solid var(--soft-line); border-radius: 9px; background: var(--surface-solid); }
+    .capture-tip > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--text); color: var(--bg); font-size: 14px; }
+    .capture-tip strong { font-size: 11px; }
+    .capture-tip p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .capture-form { min-width: 0; }
+    .capture-form .chips { max-height: 93px; overflow: auto; }
+    .capture-form .save-row { position: sticky; bottom: -1px; padding-top: 12px; background: linear-gradient(var(--page-bg), var(--page-bg)); }
+    body.modal-open { overflow: hidden; }
+    .hide { display: none !important; }
+    @media (max-width: 1180px) { .main-nav { gap: 0; } .nav-item { padding: 0 8px; } .library { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    @media (max-width: 980px) { .topbar.workspace-topbar { align-items: center; flex-wrap: wrap; padding: 12px 16px; } .main-nav { order: 3; width: 100%; overflow-x: auto; } .topbar-actions { width: calc(100% - 240px); min-width: 0; margin-left: auto; flex-wrap: nowrap; } .global-search { min-width: 0; flex: 1 1 180px; } .topbar-actions .auth-button { flex: 0 0 auto; } .workspace-page { padding: 18px 16px 50px; } .workspace-hero { min-height: 270px; align-items: flex-start; flex-direction: column; padding: 32px 25px; } .hero-index { display: none; } .overview-grid, .content-layout { grid-template-columns: 1fr; } .category-panel { position: static; } .category-panel .category-group { display: inline-block; vertical-align: top; width: 32%; margin-right: 1%; } .category-panel .category-group:last-child { margin-right: 0; } .spotlight { grid-template-columns: 1fr 190px; } .library { grid-template-columns: repeat(2, minmax(0,1fr)); } .capture-body { grid-template-columns: 1fr; } .capture-source { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 620px) { .workspace-page { padding: 12px 12px 38px; } .topbar-actions { width: 100%; flex-wrap: wrap; } .global-search { flex: 1 1 160px; } .cloud-status { display: none; } .auth-button { flex: 1; } .workspace-hero { border-radius: 15px; padding: 28px 20px; } .workspace-hero h2 { font-size: 38px; } .overview-grid { gap: 10px; } .spotlight { display: block; } .spotlight-media { min-height: 150px; max-height: 190px; } .spotlight-copy { min-height: 220px; } .stage-header { align-items: flex-start; flex-direction: column; } .stage-actions { width: 100%; justify-content: space-between; } .category-panel .category-group { display: block; width: 100%; margin-right: 0; } .library { grid-template-columns: 1fr; } .capture-sheet { padding: 20px 15px 30px; border-radius: 15px 0 0 15px; } .capture-source { grid-template-columns: 1fr; } .capture-head h2 { font-size: 23px; } }
+
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
+  <header class="topbar workspace-topbar">
+    <div class="brand brand-button" id="brandHome" role="button" tabindex="0" aria-label="返回首页">
       <div class="mark">A</div>
-      <div><h1>Atlas</h1><small>好的设计、审美、技能、工具与方法</small></div>
+      <div><h1>Atlas</h1><small>Personal reference system</small></div>
     </div>
-    <div class="top-actions">
+    <nav class="main-nav" id="mainNav" aria-label="主要导航">
+      <button class="nav-item active" type="button" data-view="home">首页</button>
+      <button class="nav-item" type="button" data-view="design">设计灵感</button>
+      <button class="nav-item" type="button" data-view="ai">AI 参考</button>
+      <button class="nav-item" type="button" data-view="skills">技能与工具</button>
+      <button class="nav-item" type="button" data-view="all">全部收藏</button>
+    </nav>
+    <div class="topbar-actions">
+      <label class="global-search" for="globalSearch"><span class="search-icon">⌕</span><input id="globalSearch" name="atlas-query" type="text" inputmode="search" placeholder="搜索收藏" autocomplete="new-password"></label>
       <span class="cloud-status offline" id="cloudStatus">本地模式</span>
-      <button class="btn" id="authBtn">登录云端</button>
-      <button class="btn theme-toggle" id="themeBtn">深色</button>
-      <button class="btn" id="exportBtn">导出</button>
-      <button class="btn" id="importBtn">导入</button>
-      <button class="btn danger" id="clearBtn">清空</button>
+      <button class="btn sync-button hide" id="uploadCloudBtn" type="button" disabled>上传云端</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="切换深浅色主题" title="切换深浅色主题">◐</button>
+      <div class="more-wrap">
+        <button class="icon-btn" id="moreBtn" type="button" aria-label="更多操作" title="更多操作">•••</button>
+        <div class="more-menu hide" id="moreMenu">
+          <button type="button" id="exportBtn">导出收藏</button>
+          <button type="button" id="importBtn">导入收藏</button>
+          <button type="button" class="danger-text" id="clearBtn">清空本地收藏</button>
+        </div>
+      </div>
+      <button class="btn auth-button" id="authBtn" type="button">登录云端</button>
     </div>
   </header>
 
-  <main class="page">
-    <section class="hero">
-      <div>
-        <h1>你的私人灵感与能力收藏夹。</h1>
-        <p>图片、链接、AI Prompt、工具、技能、方法都能保存。先快速放进来，再用分类、标签和搜索慢慢整理。</p>
-      </div>
-      <div class="stats" id="stats"></div>
-    </section>
-
-    <section class="capture">
-      <div class="drop panel" id="drop">
-        <input id="fileInput" type="file" accept="image/*" />
-        <div id="dropContent">
-          <strong>添加图片参考</strong>
-          <p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p>
-          <span class="hint" id="uploadHint">本地保存；登录后会永久同步到云端</span>
+  <main class="page workspace-page">
+    <section class="workspace-hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <span class="eyebrow">PERSONAL REFERENCE SYSTEM</span>
+        <h2 id="heroTitle">今天看点什么？</h2>
+        <p id="heroSubtitle">从已收藏内容中重新发现值得研究的设计、审美和方法。</p>
+        <div class="hero-actions">
+          <button class="btn primary large-btn" id="openCaptureBtn" type="button"><span>＋</span>快速收藏</button>
+          <button class="btn ghost-btn" id="focusDesignBtn" type="button">只看设计灵感</button>
         </div>
       </div>
-      <div class="form panel">
-        <div>
-          <div class="label">快速保存为</div>
-          <div class="quick-row" id="quickKinds">
-            <button class="quick-btn" data-kind="设计项目" data-category="视觉设计" data-tags="设计,视觉,作品集">设计项目</button>
-            <button class="quick-btn" data-kind="图片" data-category="好的设计" data-tags="设计,审美">设计参考</button>
-            <button class="quick-btn" data-kind="案例" data-category="案例拆解" data-tags="案例拆解,拆解,可复用">案例拆解</button>
-            <button class="quick-btn" data-kind="设计项目" data-category="作品集参考" data-tags="作品集,提案,商业价值">作品集</button>
-            <button class="quick-btn" data-kind="AI Prompt" data-category="AI生图风格参考" data-tags="AI生图参考,Prompt,关键词">AI 风格参考</button>
-            <button class="quick-btn" data-kind="工具" data-category="好的工具" data-tags="工具,效率">好工具</button>
-            <button class="quick-btn" data-kind="技能" data-category="好的技能" data-tags="技能,方法">好技能</button>
-            <button class="quick-btn" data-kind="方法" data-category="好的方法" data-tags="方法,系统化">好方法</button>
-          </div>
-        </div>
-        <div class="grid-3">
-          <div><div class="label">标题</div><input id="titleInput" placeholder="例如：适合学习的 Figma 插件"></div>
-          <div><div class="label">收藏类型</div><select id="kindInput"></select></div>
-          <div><div class="label">分类</div><select id="categoryInput"></select></div>
-        </div>
-        <div>
-          <div class="label">链接</div>
-          <div class="link-field"><input id="urlInput" placeholder="网页、工具、教程、作品、AI 图片来源链接"><button class="btn" id="analyzeBtn" type="button">分析链接</button></div>
-          <div class="analysis" id="analysisPanel"></div>
-        </div>
-        <div><div class="label">项目介绍 / 摘要</div><textarea id="summaryInput" placeholder="链接分析读到的介绍会放这里。也可以手动写：这是哪个项目、解决什么问题、视觉特点是什么。"></textarea><div class="field-help">这是作品、案例、工具或方法本身的说明，不等于 AI Prompt。</div></div>
-        <div id="aiPromptBox"><div class="label" id="promptLabel">AI Prompt / 风格关键词（可选）</div><textarea id="promptInput" placeholder="只有 AI 参考需要写：原始 Prompt、负面词、模型、风格关键词或生成参数。"></textarea><div class="field-help" id="promptHelp">普通设计项目不需要填写 AI 内容。</div></div>
-        <div><div class="label">预设标签</div><div class="chips" id="presetTags"></div></div>
-        <div><div class="label">我的判断</div><textarea id="noteInput" placeholder="好在哪里？可复用到作品集、提案或练习的哪一部分？可以学习构图、配色、叙事、交互还是商业表达？"></textarea></div>
-        <button class="btn primary" id="saveBtn">保存</button>
-      </div>
+      <div class="hero-index"><span>ATLAS / 01</span><span>COLLECT · REFLECT · REUSE</span></div>
     </section>
 
-    <section class="filters panel">
-      <div><input id="searchInput" placeholder="搜索标题、链接、Prompt、工具名、技能、标签、备注"><div class="count" id="countText"></div></div>
-      <div class="filter-side"><div class="chips" id="kindFilters"></div><div class="chips" id="categoryFilters"></div><div class="chips" id="tagFilters"></div></div>
+    <section class="overview-grid">
+      <article class="spotlight panel" id="spotlightPanel"></article>
+      <aside class="overview-side">
+        <div class="stats panel" id="stats"></div>
+        <div class="sync-card panel">
+          <div class="sync-card-top"><span class="status-dot"></span><span>本地优先</span><span class="sync-card-label">可手动同步</span></div>
+          <p>先把灵感放进 Atlas，整理完成后再一次上传到云端。</p>
+          <button class="text-btn" id="openAuthFromCard" type="button">查看同步设置 <span>↗</span></button>
+        </div>
+      </aside>
     </section>
 
-    <section class="library" id="library"></section>
+    <section class="content-layout">
+      <aside class="category-panel panel" id="categoryNav" aria-label="分类导航"></aside>
+      <section class="library-stage">
+        <div class="stage-header">
+          <div><span class="eyebrow">YOUR COLLECTION</span><h2 id="collectionTitle">最近收藏</h2><p id="collectionHint">你保存的内容会在这里重新出现。</p></div>
+          <div class="stage-actions"><button class="btn small" id="resetFiltersBtn" type="button">清除筛选</button><span class="count" id="countText"></span></div>
+        </div>
+        <div class="filter-toolbar panel">
+          <div class="filter-search"><span class="search-icon">⌕</span><input id="searchInput" name="atlas-query-secondary" type="text" inputmode="search" placeholder="搜索标题、链接、Prompt、工具、标签或备注" autocomplete="new-password"></div>
+          <div class="filter-group" id="kindFilters"></div>
+          <div class="filter-group" id="categoryFilters"></div>
+          <div class="filter-group" id="tagFilters"></div>
+        </div>
+        <section class="library" id="library"></section>
+      </section>
+    </section>
   </main>
 
-  <div class="drawer" id="drawer">
-    <div class="editor panel">
-      <div class="editor-head"><h2>编辑收藏</h2><div class="top-actions"><button class="btn small danger" id="deleteBtn">删除</button><button class="btn small" id="closeBtn">关闭</button></div></div>
-      <div class="editor-grid"><div class="big-preview" id="editPreview"></div><div class="editor-form" id="editForm"></div></div>
-    </div>
+  <div class="capture-drawer" id="captureDrawer" aria-hidden="true">
+    <section class="capture-sheet panel" role="dialog" aria-modal="true" aria-labelledby="captureTitle">
+      <div class="capture-head"><div><span class="eyebrow">QUICK CAPTURE</span><h2 id="captureTitle">把值得记住的东西放进来</h2><p>图片、动态、链接和文字都可以先保存到本机，整理完后再上传云端。</p></div><button class="icon-btn" id="captureCloseBtn" type="button" aria-label="关闭快速收藏">×</button></div>
+      <div class="capture-body">
+        <div class="capture-source">
+          <div class="drop panel" id="drop">
+            <input id="fileInput" type="file" accept="image/*" />
+            <div id="dropContent"><strong>放入视觉参考</strong><p>拖拽、点击选择，或复制图片后按 Ctrl + V。也可以只收藏链接、技能、工具或方法。</p><span class="hint" id="uploadHint">只保存在本机；登录后再选择上传</span></div>
+          </div>
+          <div class="capture-tip"><span>⌘</span><div><strong>快速入口</strong><p>在任何页面复制图片或链接，回到 Atlas 直接粘贴即可。</p></div></div>
+        </div>
+        <div class="form capture-form" id="captureForm">
+          <div><div class="label">先选择它属于什么</div><div class="quick-row" id="quickKinds">
+            <button class="quick-btn" data-kind="设计项目" data-category="视觉设计" data-tags="设计,视觉,作品集">设计项目</button><button class="quick-btn" data-kind="图片" data-category="好的设计" data-tags="设计,审美">设计参考</button><button class="quick-btn" data-kind="案例" data-category="案例拆解" data-tags="案例拆解,拆解,可复用">案例拆解</button><button class="quick-btn" data-kind="设计项目" data-category="作品集参考" data-tags="作品集,提案,商业价值">作品集</button><button class="quick-btn" data-kind="AI Prompt" data-category="AI生图风格参考" data-tags="AI生图参考,Prompt,关键词">AI 风格参考</button><button class="quick-btn" data-kind="工具" data-category="好的工具" data-tags="工具,效率">好工具</button><button class="quick-btn" data-kind="技能" data-category="好的技能" data-tags="技能,方法">好技能</button><button class="quick-btn" data-kind="方法" data-category="好的方法" data-tags="方法,系统化">好方法</button>
+          </div></div>
+          <div class="grid-3"><div><div class="label">标题</div><input id="titleInput" placeholder="例如：适合学习的 Figma 插件"></div><div><div class="label">收藏类型</div><select id="kindInput"></select></div><div><div class="label">分类</div><select id="categoryInput"></select></div></div>
+          <div><div class="label">链接</div><div class="link-field"><input id="urlInput" placeholder="网页、工具、教程、作品、AI 图片来源链接"><button class="btn" id="analyzeBtn" type="button">分析链接</button></div><div class="analysis" id="analysisPanel"></div></div>
+          <div><div class="label">项目介绍 / 摘要</div><textarea id="summaryInput" placeholder="这是作品、案例、工具或方法本身的说明，不等于 AI Prompt。"></textarea><div class="field-help">记录它是什么、解决什么问题、值得学习的视觉或方法。</div></div>
+          <div id="aiPromptBox"><div class="label" id="promptLabel">AI Prompt / 风格关键词（可选）</div><textarea id="promptInput" placeholder="只有 AI 参考需要写：原始 Prompt、负面词、模型、风格关键词或生成参数。"></textarea><div class="field-help" id="promptHelp">普通设计项目不需要填写 AI 内容。</div></div>
+          <div><div class="label">预设标签</div><div class="chips" id="presetTags"></div></div>
+          <div><div class="label">我的判断</div><textarea id="noteInput" placeholder="好在哪里？以后可以用在作品集、提案、练习或工作流程的哪一部分？"></textarea></div>
+          <div class="save-row"><button class="btn primary" id="saveBtn" type="button">保存到本机</button><p class="save-state" id="saveState">不会自动上传云端</p></div>
+        </div>
+      </div>
+    </section>
   </div>
-  <div class="auth-drawer" id="authDrawer">
-    <div class="auth-card panel">
-      <div class="auth-head">
-        <div><h2>Atlas 云端同步</h2><p id="authSubtitle">登录后，你的收藏可以在手机和电脑之间同步。</p></div>
-        <button class="btn small" id="authCloseBtn" type="button">关闭</button>
-      </div>
-      <div class="auth-form" id="authForm">
-        <div><div class="label">邮箱</div><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
-        <div><div class="label">密码</div><input id="authPassword" type="password" autocomplete="current-password" placeholder="至少 6 位字符"></div>
-        <div class="auth-actions"><button class="btn primary" id="signInBtn" type="button">登录</button><button class="btn" id="signUpBtn" type="button">注册账号</button><button class="btn" id="magicLinkBtn" type="button">发送魔法链接</button></div>
-        <p class="auth-message" id="authMessage"></p>
-      </div>
-      <div class="auth-form hide" id="accountForm">
-        <p class="sync-note">当前账号：<strong id="accountEmail"></strong></p>
-        <p class="sync-note">云端模式会保存收藏记录和你上传的图片。自动读取的第三方链接封面仍可能受原网站限制。</p>
-        <div class="auth-actions"><button class="btn primary" id="syncLocalBtn" type="button">上传本地收藏</button><button class="btn" id="signOutBtn" type="button">退出登录</button></div>
-        <p class="auth-message" id="accountMessage"></p>
-      </div>
-    </div>
-  </div>
+
+  <div class="drawer" id="drawer"><div class="editor panel"><div class="editor-head"><h2>编辑收藏</h2><div class="top-actions"><button class="btn small danger" id="deleteBtn" type="button">删除</button><button class="btn small" id="closeBtn" type="button">关闭</button></div></div><div class="editor-grid"><div class="big-preview" id="editPreview"></div><div class="editor-form" id="editForm"></div></div></div></div>
+  <div class="auth-drawer" id="authDrawer"><div class="auth-card panel"><div class="auth-head"><div><h2>Atlas 云端同步</h2><p id="authSubtitle">登录后，你的收藏可以在手机和电脑之间同步。</p></div><button class="btn small" id="authCloseBtn" type="button">关闭</button></div><div class="auth-form" id="authForm"><div><div class="label">邮箱</div><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div><div><div class="label">密码</div><input id="authPassword" type="password" autocomplete="current-password" placeholder="至少 6 位字符"></div><div class="auth-actions"><button class="btn primary" id="signInBtn" type="button">登录</button><button class="btn" id="signUpBtn" type="button">注册账号</button><button class="btn" id="magicLinkBtn" type="button">发送魔法链接</button></div><p class="auth-message" id="authMessage"></p></div><div class="auth-form hide" id="accountForm"><p class="sync-note">当前账号：<strong id="accountEmail"></strong></p><p class="sync-note">新增、编辑和删除会先保存到本机；只有点击上传后才会同步到云端。</p><p class="sync-note" id="accountSyncState">当前已同步</p><div class="auth-actions"><button class="btn primary" id="syncLocalBtn" type="button">上传待同步内容</button><button class="btn" id="signOutBtn" type="button">退出登录</button></div><p class="auth-message" id="accountMessage"></p></div></div></div>
   <input id="importFile" type="file" accept="application/json" hidden>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js"></script>
-  <script>
-    const storeKey = 'atlas-universal-library-v4';
+  <script>    const storeKey = 'atlas-universal-library-v4';
     const oldKeys = ['visual-atlas-reference-box-v3'];
     const kinds = ['设计项目','图片','链接','AI Prompt','工具','技能','方法','案例','文章','灵感'];
-    const categories = ['好的设计','好的审美','好的技能','好的工具','好的方法','IP形象','品牌设计','视觉设计','产品设计','UI / UX','网页 / 产品参考','包装设计','运营海报','字体 / 标志','插画 / 3D参考','动效参考','摄影 / 影像参考','空间 / 展陈','作品集参考','案例拆解','AI生图风格参考','AI关键词 / Prompt','版式参考','配色 / 材质','待整理'];
+    const categories = ['好的设计','好的审美','好的技能','好的工具','好的方法','IP形象','品牌设计','视觉设计','产品设计','UI / UX','网页 / 产品参考','包装设计','运营海报','字体 / 标志','插画 / 3D参考','动效参考','摄影 / 影像参考','空间 / 展陈','作品集参考','案例拆解','AI生图风格参考','AI关键词 / Prompt','待复现','版式参考','配色 / 材质','待整理'];
     const presets = ['设计','审美','技能','工具','方法','IP','品牌','视觉','产品','UI','UX','网页','包装','海报','字体','标志','动效','摄影','插画','3D','AIGC','作品集','案例拆解','拆解','提案','可复用','趋势','面试','商业价值','AI生图参考','Prompt','关键词','Midjourney','Stable Diffusion','Figma','效率','构图','配色','光影','材质','版式','高级感','极简','系统化'];
     const demo = [
       {id:'d1',kind:'AI Prompt',title:'暗色高级界面 Prompt',category:'AI生图风格参考',url:'',prompt:'dark premium interface, editorial layout, precise grid, subtle glow, high-end visual system',tags:['AI生图参考','Prompt','UI','高级感'],note:'以后做工具型网站或资料库界面时可以复用这一组风格关键词。',image:'',createdAt:Date.now()-60000},
@@ -333,6 +472,53 @@
     let activeKind = '全部';
     let activeCategory = '全部';
     let activeTag = '全部';
+
+    const categoryGroups = [
+      {label:'设计灵感', key:'design', items:[['品牌设计','品牌'],['视觉设计','视觉'],['产品设计','产品'],['UI / UX','UI / UX'],['IP形象','IP'],['版式参考','版式']]},
+      {label:'AI 参考', key:'ai', items:[['AI生图风格参考','风格参考'],['AI关键词 / Prompt','Prompt'],['待复现','待复现']]},
+      {label:'成长资料', key:'skills', items:[['好的工具','工具'],['好的技能','技能'],['好的方法','方法'],['案例拆解','案例']]}
+    ];
+    let activeView = 'home';
+    function viewMatches(item){
+      const i = normalize(item);
+      if(activeView === 'design') return ['设计项目','图片','链接','案例','灵感'].includes(i.kind) && !String(i.category||'').includes('AI');
+      if(activeView === 'ai') return isAiContext(i.kind, i.category) || i.tags.some(tag=>/AI|Prompt|关键词/i.test(tag));
+      if(activeView === 'skills') return ['工具','技能','方法','文章'].includes(i.kind) || ['好的工具','好的技能','好的方法'].includes(i.category);
+      return true;
+    }
+    function cleanSearchAutofill(){ const fields=[$('#searchInput'),$('#globalSearch')]; if(fields.some(field=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(field?.value||'').trim()))){ fields.forEach(field=>{ if(field) field.value=''; }); } }
+    function getSearchValue(){ cleanSearchAutofill(); return String($('#searchInput')?.value || '').trim().toLowerCase(); }
+    function setView(view){
+      activeView = view;
+      activeKind = '全部'; activeCategory = '全部'; activeTag = '全部';
+      $$('#mainNav .nav-item').forEach(btn=>btn.classList.toggle('active', btn.dataset.view === view));
+      updateWorkspaceCopy(); render();
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    function updateWorkspaceCopy(){
+      const meta = {home:['今天看点什么？','从已收藏内容中重新发现值得研究的设计、审美和方法。','最近收藏','你保存的内容会在这里重新出现。'],design:['设计灵感','按品牌、视觉、产品和界面，找回值得参考的作品。','设计灵感库','把好的设计变成可复用的判断。'],ai:['AI 参考','把风格、Prompt、关键词和待复现案例放在同一个地方。','AI 参考库','只有明确与 AI 有关的内容才会出现在这里。'],skills:['技能与工具','收藏能提升你工作效率、表达能力和判断力的工具与方法。','成长资料','从收藏开始，建立属于自己的工作系统。'],all:['全部收藏','所有参考内容都在这里，用搜索和分类快速找回。','全部收藏','按最近更新排列。']}[activeView];
+      if(!meta) return;
+      $('#heroTitle').textContent=meta[0]; $('#heroSubtitle').textContent=meta[1]; $('#collectionTitle').textContent=meta[2]; $('#collectionHint').textContent=meta[3];
+      $('#focusDesignBtn').textContent=activeView==='design'?'查看全部收藏':'只看设计灵感';
+    }
+    function openCapture(){ $('#captureDrawer').classList.add('show'); $('#captureDrawer').setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); setTimeout(()=>$('#titleInput')?.focus(),180); }
+    function closeCapture(){ $('#captureDrawer').classList.remove('show'); $('#captureDrawer').setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); }
+    function resetFilters(){ activeKind='全部'; activeCategory='全部'; activeTag='全部'; $('#searchInput').value=''; $('#globalSearch').value=''; render(); }
+    function renderSpotlight(){
+      const candidates = items.map(normalize).filter(viewMatches).sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+      const item = candidates.find(i=>i.image || i.url) || candidates[0];
+      if(!item){ $('#spotlightPanel').innerHTML='<div class="spotlight-copy"><span class="eyebrow">SPOTLIGHT</span><h2>从一条收藏开始。</h2><p>把今天看到的好东西放进来，Atlas 会帮你整理成可回看的参考库。</p><button class="btn spotlight-action" type="button" onclick="openCapture()">快速收藏 ↗</button></div><div class="spotlight-media"><div class="blank">还没有内容</div></div>'; return; }
+      $('#spotlightPanel').innerHTML='<div class="spotlight-copy"><div><span class="eyebrow">SPOTLIGHT / '+esc(item.kind)+'</span><h2>'+esc(item.title)+'</h2><p>'+esc(item.summary||item.note||item.prompt||'这条收藏值得你再看一遍。')+'</p></div><div class="spotlight-meta"><span>'+esc(item.category)+'</span><span>·</span><button class="btn small spotlight-action" type="button" data-spotlight-id="'+attr(item.id)+'">打开收藏 ↗</button></div></div><div class="spotlight-media">'+visual(item)+'</div>';
+      $('#spotlightPanel [data-spotlight-id]')?.addEventListener('click',()=>openItem(item.id));
+    }
+    function renderCategoryNav(){
+      const total = items.filter(viewMatches).length;
+      let html='<div class="category-heading"><h3>按领域浏览</h3><span>'+total+' 条</span></div><button class="category-link category-clear '+(activeKind==='全部'&&activeCategory==='全部'&&activeTag==='全部'?'active':'')+'" data-reset="true">全部收藏 <span>›</span></button>';
+      categoryGroups.forEach(group=>{ html+='<div class="category-group"><div class="category-group-title">'+esc(group.label)+'</div>'+group.items.map(([value,label])=>{ const count=items.map(normalize).filter(i=>i.category===value).length; return '<button class="category-link '+(activeCategory===value?'active':'')+'" data-category-link="'+attr(value)+'" data-view-link="'+group.key+'">'+esc(label)+' <span>'+count+'</span></button>'; }).join('')+'</div>'; });
+      $('#categoryNav').innerHTML=html;
+      $('#categoryNav [data-reset]').onclick=()=>{ activeKind='全部'; activeCategory='全部'; activeTag='全部'; render(); };
+      $$('#categoryNav [data-category-link]').forEach(btn=>btn.onclick=()=>{ activeView=btn.dataset.viewLink; activeKind='全部'; activeTag='全部'; activeCategory=btn.dataset.categoryLink; $$('#mainNav .nav-item').forEach(nav=>nav.classList.toggle('active',nav.dataset.view===activeView)); updateWorkspaceCopy(); render(); });
+    }
     let selectedId = '';
     let linkAnalysis = null;
     let analyzeTimer = 0;
@@ -340,8 +526,10 @@
     let currentUser = null;
     let cloudMode = false;
     let cloudReady = false;
-    let cloudSyncTimer = 0;
+    let cloudDirty = false;
+    let cloudSyncing = false;
     let cloudSyncPromise = Promise.resolve();
+    let pendingRemovedPaths = new Set();
     let offlineSnapshot = [];
     const localBackupKey = storeKey + '-offline-backup';
     const $ = s => document.querySelector(s);
@@ -355,7 +543,12 @@
     function normalize(item){ const kind=item.kind||guessKind(item); const category=item.category||'待整理'; const ai=isAiContext(kind, category); return { id:item.id||uid(), kind, title:item.title||'未命名收藏', category, url:item.url||'', summary:item.summary || (!ai ? item.prompt || '' : ''), prompt: ai ? item.prompt||'' : '', tags:Array.isArray(item.tags) ? item.tags : tagsFrom(item.tags), note:item.note||'', image:item.image||'', imagePath:item.imagePath||item.image_path||'', imageUrl:item.imageUrl||item.image_url||'', createdAt:item.createdAt||Date.now(), updatedAt:item.updatedAt||item.updated_at||item.createdAt||Date.now() }; }
     function guessKind(item){ if(item.category && /IP|品牌|视觉|产品|UI|UX|包装|作品集/.test(item.category)) return '设计项目'; if(item.prompt && item.category && item.category.includes('Prompt')) return 'AI Prompt'; if(item.url) return '链接'; if(item.image) return '图片'; return '灵感'; }
     function writeLocalCache(){ localStorage.setItem(storeKey, JSON.stringify(items.map(normalize))); }
-    function saveItems(){ writeLocalCache(); if(!cloudMode) localStorage.setItem(localBackupKey, JSON.stringify(items.map(normalize))); if(cloudReady && currentUser) queueCloudSync(); }
+    function saveItems(){
+      writeLocalCache();
+      if(!cloudMode) localStorage.setItem(localBackupKey, JSON.stringify(items.map(normalize)));
+      if(cloudReady && currentUser){ cloudDirty = true; setCloudStatus('pending','有本地更改'); }
+      updateCloudActionUI();
+    }
     function uid(){ return 'a-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
     function esc(v){ return String(v||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function attr(v){ return esc(v).replace(/'/g,'&#39;'); }
@@ -367,7 +560,20 @@
 
     function init(){
       applyTheme(localStorage.getItem('atlas-theme') || 'light');
+      $('#globalSearch').value = ''; $('#searchInput').value = '';
       $('#themeBtn').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      $('#openCaptureBtn').onclick = openCapture;
+      $('#captureCloseBtn').onclick = closeCapture;
+      $('#captureDrawer').onclick = e => { if(e.target.id === 'captureDrawer') closeCapture(); };
+      $('#focusDesignBtn').onclick = () => setView(activeView === 'design' ? 'all' : 'design');
+      $('#resetFiltersBtn').onclick = resetFilters;
+      $('#openAuthFromCard').onclick = openAuth;
+      $('#brandHome').onclick = () => setView('home');
+      $('#brandHome').onkeydown = e => { if(e.key === 'Enter' || e.key === ' ') setView('home'); };
+      $$('#mainNav .nav-item').forEach(btn => btn.onclick = () => setView(btn.dataset.view));
+      $('#globalSearch').oninput = e => { $('#searchInput').value = e.target.value; if(activeView === 'home') activeView = 'all'; render(); };
+      $('#moreBtn').onclick = e => { e.stopPropagation(); $('#moreMenu').classList.toggle('hide'); };
+      document.addEventListener('click', e => { if(!e.target.closest('.more-wrap')) $('#moreMenu').classList.add('hide'); });
       $('#kindInput').innerHTML = kinds.map(k=>'<option>'+esc(k)+'</option>').join('');
       $('#categoryInput').innerHTML = categories.map(c=>'<option>'+esc(c)+'</option>').join('');
       $('#kindInput').onchange = updatePromptField;
@@ -376,14 +582,14 @@
       $$('#presetTags .chip').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));
       $$('#quickKinds .quick-btn').forEach(btn=>btn.onclick=()=>applyQuickChoice(btn));
       $('#saveBtn').onclick = addItem;
-      $('#searchInput').oninput = render;
+      $('#searchInput').oninput = () => { $('#globalSearch').value = $('#searchInput').value; render(); };
       $('#urlInput').oninput = () => { const value = normalizeUrl($('#urlInput').value.trim()); if(/^https?:\/\//.test(value) && !pendingImage && $('#kindInput').value === '图片') $('#kindInput').value = '链接'; updatePromptField(); scheduleLinkAnalysis(); };
       $('#analyzeBtn').onclick = () => analyzeLink(true);
       $('#fileInput').onchange = e => e.target.files[0] && setImage(e.target.files[0]);
       $('#exportBtn').onclick = exportData;
       $('#importBtn').onclick = () => $('#importFile').click();
       $('#importFile').onchange = e => e.target.files[0] && importData(e.target.files[0]);
-      $('#clearBtn').onclick = () => { if(confirm('清空当前浏览器里的收藏？')) { items=[]; saveItems(); render(); } };
+      $('#clearBtn').onclick = () => { if(confirm('清空当前浏览器里的收藏？')) { if(cloudReady && currentUser) items.filter(item=>item.imagePath).forEach(item=>pendingRemovedPaths.add(item.imagePath)); items=[]; saveItems(); render(); } };
       $('#authBtn').onclick = openAuth;
       $('#authCloseBtn').onclick = closeAuth;
       $('#authDrawer').onclick = e => { if(e.target.id === 'authDrawer') closeAuth(); };
@@ -391,6 +597,7 @@
       $('#signUpBtn').onclick = signUp;
       $('#magicLinkBtn').onclick = sendMagicLink;
       $('#signOutBtn').onclick = signOut;
+      $('#uploadCloudBtn').onclick = syncNow;
       $('#syncLocalBtn').onclick = syncOfflineBackup;
       $('#closeBtn').onclick = closeDrawer;
       $('#drawer').onclick = e => { if(e.target.id === 'drawer') closeDrawer(); };
@@ -401,10 +608,10 @@
       drop.addEventListener('drop',e=>{ const file = Array.from(e.dataTransfer.files).find(f=>f.type.startsWith('image/')); if(file) setImage(file); });
       document.addEventListener('paste', e => {
         const imageItem = Array.from(e.clipboardData?.items || []).find(item=>item.type.startsWith('image/'));
-        if(imageItem){ setImage(imageItem.getAsFile()); return; }
+        if(imageItem){ if(!$('#captureDrawer').classList.contains('show')) openCapture(); setImage(imageItem.getAsFile()); return; }
         const text = e.clipboardData?.getData('text')?.trim();
         if(text && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-          if(/^https?:\/\//.test(text) || /^www\./i.test(text)) { $('#urlInput').value = text; $('#urlInput').dispatchEvent(new Event('input')); }
+          if(/^https?:\/\//.test(text) || /^www\./i.test(text)) { if(!$('#captureDrawer').classList.contains('show')) openCapture(); $('#urlInput').value = text; $('#urlInput').dispatchEvent(new Event('input')); }
           else if(isAiContext($('#kindInput').value, $('#categoryInput').value)) $('#promptInput').value = text;
           else $('#summaryInput').value = text;
         }
@@ -416,7 +623,41 @@
     }
     function cloudConfig(){ const config = window.ATLAS_SUPABASE_CONFIG || {}; return { url:String(config.url||'').trim(), key:String(config.key||config.anonKey||'').trim() }; }
     function cloudConfigured(){ const config = cloudConfig(); return Boolean(window.supabase && /^https:\/\/[^\s]+\.supabase\.co$/i.test(config.url) && config.key && !/^YOUR_/i.test(config.key)); }
-    function setCloudStatus(state, text){ const el=$('#cloudStatus'); if(!el) return; el.className='cloud-status '+state; el.textContent=text; $('#uploadHint').textContent = state === 'ready' ? '已同步到云端；自动读取的第三方封面仍可能受原网站限制' : state === 'syncing' ? '正在同步图片和收藏记录…' : state === 'error' ? '云端同步失败，当前内容仍保留在本机' : '本地保存；登录后会永久同步到云端'; }
+    function setCloudStatus(state, text){
+      const el=$('#cloudStatus');
+      if(!el) return;
+      el.className='cloud-status '+state;
+      el.textContent=text;
+      const hint=$('#uploadHint');
+      if(hint) hint.textContent = state === 'ready' ? '已同步；之后的新增和编辑会先保存在本机' : state === 'pending' ? '本机已保存；点击“上传云端”同步本次更改' : state === 'loading' ? '正在读取云端收藏…' : state === 'syncing' ? '正在上传收藏和图片…' : state === 'error' ? '上传失败；本机内容仍保留，可以重试' : '只保存在本机；登录后再选择上传';
+      updateSaveState();
+      updateCloudActionUI();
+    }
+    function updateSaveState(){
+      const el=$('#saveState');
+      if(!el) return;
+      el.textContent = cloudSyncing ? '正在上传云端' : cloudDirty && currentUser ? '已保存到本机，等待上传' : currentUser ? '已保存并已同步' : '不会自动上传云端';
+    }
+    function showToast(text){
+      const el=$('#toast');
+      if(!el) return;
+      el.textContent=text;
+      el.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer=setTimeout(()=>el.classList.remove('show'),2200);
+    }
+    function updateCloudActionUI(){
+      const btn=$('#uploadCloudBtn');
+      const accountState=$('#accountSyncState');
+      if(!btn) return;
+      const visible=Boolean(cloudReady && currentUser && (cloudDirty || cloudSyncing));
+      btn.classList.toggle('hide', !visible);
+      btn.disabled=!visible || cloudSyncing || !cloudDirty;
+      btn.textContent=cloudSyncing ? '上传中…' : cloudDirty ? '上传云端' : '已同步';
+      btn.classList.toggle('primary', visible && cloudDirty && !cloudSyncing);
+      if(accountState) accountState.textContent = cloudSyncing ? '正在上传本次更改…' : cloudDirty ? '有本地更改尚未上传' : '当前已同步';
+      updateSaveState();
+    }
     function setAuthMessage(text, type){ const el=$('#authMessage'); if(!el) return; el.textContent=text||''; el.className='auth-message'+(type?' '+type:''); }
     function openAuth(){
       $('#authDrawer').classList.add('show');
@@ -431,6 +672,7 @@
       $('#accountEmail').textContent=loggedIn ? (currentUser.email||'当前账号') : '';
       $('#authSubtitle').textContent=loggedIn ? '你的收藏正在使用云端存储。' : '登录后，你的收藏可以在手机和电脑之间同步。';
       $('#authBtn').textContent=loggedIn ? '账号与同步' : '登录云端';
+      updateCloudActionUI();
     }
     async function initCloud(){
       if(!cloudConfigured()){ setCloudStatus('offline','本地模式'); updateAuthPanel(); return; }
@@ -445,21 +687,23 @@
     async function handleCloudSession(session){
       currentUser=session?.user||null;
       updateAuthPanel();
-      if(!currentUser){ if(cloudMode && offlineSnapshot.length){ items=offlineSnapshot.map(normalize); writeLocalCache(); render(); } cloudMode=false; cloudReady=false; setCloudStatus('offline','未登录'); return; }
+      if(!currentUser){ if(cloudMode && offlineSnapshot.length){ items=offlineSnapshot.map(normalize); writeLocalCache(); render(); } cloudMode=false; cloudReady=false; cloudDirty=false; pendingRemovedPaths.clear(); setCloudStatus('offline','未登录'); return; }
       await loadCloudItems();
     }
     function readBackup(){ try { const data=JSON.parse(localStorage.getItem(localBackupKey)||'null'); return Array.isArray(data) ? data.map(normalize) : []; } catch(e){ return []; } }
     function hasRealItems(list){ return list.some(item=>!['d1','d2','d3'].includes(item.id)); }
     async function loadCloudItems(){
-      setCloudStatus('syncing','读取云端收藏…');
+      setCloudStatus('loading','读取云端收藏…');
+      cloudDirty=false;
+      pendingRemovedPaths.clear();
       const localBeforeLoad=readBackup();
       offlineSnapshot=localBeforeLoad;
       const {data,error}=await supabaseClient.from('library_items').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
       if(error){ console.error(error); cloudMode=false; cloudReady=false; setCloudStatus('error','读取云端失败'); setAuthMessage('读取云端失败：'+error.message,'error'); return; }
       if(data?.length){ items=await hydrateCloudItems(data.map(rowToItem)); }
-      else if(hasRealItems(localBeforeLoad) && confirm('这个账号还没有收藏。要把当前浏览器里的本地收藏上传到云端吗？')){ items=localBeforeLoad; cloudMode=true; cloudReady=true; await syncNow(); }
+      else if(hasRealItems(localBeforeLoad)){ items=localBeforeLoad; cloudDirty=true; }
       else { items=[]; }
-      cloudMode=true; cloudReady=true; writeLocalCache(); render(); setCloudStatus('ready','已同步');
+      cloudMode=true; cloudReady=true; writeLocalCache(); render(); setCloudStatus(cloudDirty?'pending':'ready',cloudDirty?'待上传本地收藏':'已同步');
     }
     function rowToItem(row){ return normalize({id:row.id,kind:row.kind,title:row.title,category:row.category,url:row.url,summary:row.summary,prompt:row.prompt,tags:row.tags,note:row.note,imagePath:row.image_path,imageUrl:row.image_url,createdAt:row.created_at,updatedAt:row.updated_at,image:row.image_url||''}); }
     async function hydrateCloudItems(list){
@@ -482,20 +726,23 @@
       item.imagePath=path; item.imageUrl=''; item.image=await signedImageUrl(path)||item.image;
     }
     function dbRow(item){ return {id:item.id,user_id:currentUser.id,kind:item.kind,title:item.title,category:item.category,url:item.url,summary:item.summary,prompt:item.prompt,tags:item.tags,note:item.note,image_path:item.imagePath||'',image_url:item.imagePath?'':(item.imageUrl||(remoteImage(item.image)?item.image:'')),created_at:new Date(item.createdAt||Date.now()).toISOString(),updated_at:new Date().toISOString()}; }
-    function queueCloudSync(){ clearTimeout(cloudSyncTimer); setCloudStatus('syncing','等待同步…'); cloudSyncTimer=setTimeout(()=>syncNow(),700); }
     async function syncNow(){
       if(!cloudReady || !currentUser || !supabaseClient) return;
+      if(!cloudDirty && !pendingRemovedPaths.size){ setCloudStatus('ready','已同步'); return; }
       cloudSyncPromise=cloudSyncPromise.then(async()=>{
+        if(!cloudDirty && !pendingRemovedPaths.size) return;
+        cloudSyncing=true;
         setCloudStatus('syncing','同步中');
         const normalized=items.map(normalize);
-        for(const item of normalized) await uploadItemImage(item);
+        await Promise.all(normalized.map(item=>uploadItemImage(item)));
         const {error}=await supabaseClient.from('library_items').upsert(normalized.map(dbRow),{onConflict:'id'});
         if(error) throw error;
         const {data:remoteRows}=await supabaseClient.from('library_items').select('id').eq('user_id',currentUser.id);
         const localIds=new Set(normalized.map(item=>item.id));
         for(const row of remoteRows||[]) if(!localIds.has(row.id)) await supabaseClient.from('library_items').delete().eq('user_id',currentUser.id).eq('id',row.id);
-        items=normalized; writeLocalCache(); setCloudStatus('ready','已同步'); render();
-      }).catch(error=>{ console.error(error); setCloudStatus('error','同步失败'); setAuthMessage('同步失败：'+(error.message||'请检查 Supabase 表、Storage bucket 和 RLS 策略。'),'error'); });
+        if(pendingRemovedPaths.size){ await Promise.all([...pendingRemovedPaths].map(path=>supabaseClient.storage.from('atlas-assets').remove([path]))); }
+        items=normalized; writeLocalCache(); cloudDirty=false; pendingRemovedPaths.clear(); setCloudStatus('ready','已同步'); render(); showToast('已上传到云端');
+      }).catch(error=>{ console.error(error); setCloudStatus('error','上传失败'); setAuthMessage('上传失败：'+(error.message||'请检查 Supabase 表、Storage bucket 和 RLS 策略。'),'error'); showToast('上传失败，本机内容仍保留'); }).finally(()=>{ cloudSyncing=false; updateCloudActionUI(); });
       return cloudSyncPromise;
     }
     async function signIn(){
@@ -525,9 +772,9 @@
     async function signOut(){ if(!supabaseClient) return; await supabaseClient.auth.signOut(); closeAuth(); }
     async function syncOfflineBackup(){
       const backup=readBackup(); if(!backup.length){ $('#accountMessage').textContent='没有找到可上传的本地收藏。'; return; }
-      items=[...items,...backup.filter(local=>!items.some(item=>item.id===local.id))]; writeLocalCache(); $('#accountMessage').textContent='本地收藏已加入同步队列。'; await syncNow(); render();
+      items=[...items,...backup.filter(local=>!items.some(item=>item.id===local.id))]; writeLocalCache(); cloudDirty=true; setCloudStatus('pending','有本地更改'); $('#accountMessage').textContent='本地收藏已加入待上传内容，请点击“上传云端”。'; updateCloudActionUI(); render();
     }
-    function applyTheme(theme){ document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; localStorage.setItem('atlas-theme', document.documentElement.dataset.theme); $('#themeBtn').textContent = theme === 'dark' ? '浅色' : '深色'; }
+    function applyTheme(theme){ document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; localStorage.setItem('atlas-theme', document.documentElement.dataset.theme); $('#themeBtn').textContent = theme === 'dark' ? '☀' : '◐'; $('#themeBtn').title = theme === 'dark' ? '切换到浅色' : '切换到深色'; }
     function scheduleLinkAnalysis(){
       clearTimeout(analyzeTimer);
       linkAnalysis = null;
@@ -665,23 +912,23 @@
       if(!item.title && !item.url && !item.summary && !item.prompt && !item.note && !item.image){ $('#titleInput').focus(); return; }
       if(!item.title) item.title = item.url ? host(item.url) : item.summary.slice(0,30) || item.prompt.slice(0,30) || item.note.slice(0,30) || '未命名收藏';
       if(!item.tags.length) item.tags = [item.kind, item.category].filter(Boolean).slice(0,2);
-      items.unshift(item); saveItems(); resetForm(); render(); openItem(item.id);
+      items.unshift(item); saveItems(); resetForm(); render(); if($('#captureDrawer').classList.contains('show')) closeCapture(); openItem(item.id); showToast(cloudReady && currentUser ? '已保存到本机，可稍后上传云端' : '已保存到本机');
     }
-    function resetForm(){ pendingImage=''; linkAnalysis=null; ['titleInput','urlInput','summaryInput','promptInput','noteInput'].forEach(id=>$('#'+id).value=''); $('#kindInput').value='图片'; $('#categoryInput').value='好的设计'; $$('#presetTags .chip').forEach(b=>b.classList.remove('active')); $$('#quickKinds .quick-btn').forEach(b=>b.classList.remove('active')); renderAnalysis('idle'); updatePromptField(); $('#dropContent').innerHTML='<strong>添加图片参考</strong><p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p><span class="hint">'+(cloudMode?'已登录：图片会同步到云端':'本地保存；登录后会永久同步到云端')+'</span>'; }
-    function filtered(){ const q=$('#searchInput').value.trim().toLowerCase(); return items.map(normalize).filter(i=>{ const kindOk=activeKind==='全部'||i.kind===activeKind; const catOk=activeCategory==='全部'||i.category===activeCategory; const tagOk=activeTag==='全部'||i.tags.includes(activeTag); const text=[i.kind,i.title,i.category,i.url,i.summary,i.prompt,i.note,...i.tags].join(' ').toLowerCase(); return kindOk && catOk && tagOk && (!q || text.includes(q)); }); }
-    function render(){ renderStats(); renderFilters(); renderLibrary(); }
-    function renderStats(){ const data=[['全部',items.length],['图片',items.filter(i=>i.image).length],['链接',items.filter(i=>i.url).length],['AI/技能/工具',items.filter(i=>['AI Prompt','技能','工具','方法'].includes(i.kind)).length]]; $('#stats').innerHTML=data.map(s=>'<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join(''); }
+    function resetForm(){ pendingImage=''; linkAnalysis=null; ['titleInput','urlInput','summaryInput','promptInput','noteInput'].forEach(id=>$('#'+id).value=''); $('#kindInput').value='图片'; $('#categoryInput').value='好的设计'; $$('#presetTags .chip').forEach(b=>b.classList.remove('active')); $$('#quickKinds .quick-btn').forEach(b=>b.classList.remove('active')); renderAnalysis('idle'); updatePromptField(); $('#dropContent').innerHTML='<strong>添加图片参考</strong><p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p><span class="hint" id="uploadHint">'+(cloudMode?'已登录：先保存在本机，点击“上传云端”同步':'只保存在本机；登录后再选择上传')+'</span>'; }
+    function filtered(){ const q=getSearchValue(); return items.map(normalize).filter(i=>{ const kindOk=activeKind==='全部'||i.kind===activeKind; const catOk=activeCategory==='全部'||i.category===activeCategory; const tagOk=activeTag==='全部'||i.tags.includes(activeTag); const text=[i.kind,i.title,i.category,i.url,i.summary,i.prompt,i.note,...i.tags].join(' ').toLowerCase(); return viewMatches(i) && kindOk && catOk && tagOk && (!q || text.includes(q)); }); }
+    function render(){ renderStats(); renderFilters(); renderCategoryNav(); renderSpotlight(); renderLibrary(); updateWorkspaceCopy(); }
+    function renderStats(){ const list=items.map(normalize); const data=[['全部',list.length],['设计灵感',list.filter(i=>!isAiContext(i.kind,i.category)&&['设计项目','图片','链接','案例','灵感'].includes(i.kind)).length],['AI 参考',list.filter(i=>isAiContext(i.kind,i.category)).length],['技能与工具',list.filter(i=>['工具','技能','方法','文章'].includes(i.kind)).length]]; $('#stats').innerHTML=data.map(s=>'<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join(''); }
     function renderFilters(){
       const existingKinds = ['全部',...kinds.filter(k=>items.some(i=>normalize(i).kind===k))];
       const existingCategories = ['全部',...categories.filter(c=>items.some(i=>normalize(i).category===c))];
       const existingTags = ['全部',...new Set(items.flatMap(i=>normalize(i).tags))];
-      $('#kindFilters').innerHTML = existingKinds.map(k=>'<button class="chip '+(k===activeKind?'active':'')+'" data-kind="'+esc(k)+'">'+esc(k)+'</button>').join('');
-      $('#categoryFilters').innerHTML = existingCategories.map(c=>'<button class="chip '+(c===activeCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join('');
-      $('#tagFilters').innerHTML = existingTags.map(t=>'<button class="chip '+(t===activeTag?'active':'')+'" data-tag="'+esc(t)+'">'+esc(t)+'</button>').join('');
+      $('#kindFilters').innerHTML = existingKinds.map(k=>'<button type="button" class="chip '+(k===activeKind?'active':'')+'" data-kind="'+esc(k)+'">'+esc(k)+'</button>').join('');
+      $('#categoryFilters').innerHTML = existingCategories.map(c=>'<button type="button" class="chip '+(c===activeCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join('');
+      $('#tagFilters').innerHTML = existingTags.map(t=>'<button type="button" class="chip '+(t===activeTag?'active':'')+'" data-tag="'+esc(t)+'">'+esc(t)+'</button>').join('');
       $$('#kindFilters .chip').forEach(b=>b.onclick=()=>{ activeKind=b.dataset.kind; render(); });
       $$('#categoryFilters .chip').forEach(b=>b.onclick=()=>{ activeCategory=b.dataset.category; render(); });
       $$('#tagFilters .chip').forEach(b=>b.onclick=()=>{ activeTag=b.dataset.tag; render(); });
-      $('#countText').textContent = '共 ' + items.length + ' 条，当前显示 ' + filtered().length + ' 条';
+      $('#countText').textContent = '显示 ' + filtered().length + ' / ' + items.length;
     }
     function renderLibrary(){ const list=filtered(); $('#library').innerHTML = list.map(card).join('') || '<div class="empty">还没有匹配内容。可以先保存一张图片、一个链接、一段 Prompt、一个工具或一个方法。</div>'; $$('.card').forEach(card=>card.onclick=()=>openItem(card.dataset.id)); }
     function visual(i){ if(i.image) return '<img src="'+i.image+'" alt="'+esc(i.title)+'">'; if(i.url) return '<div class="linkbox">链接<br>'+esc(host(i.url))+'</div>'; if(i.kind==='AI Prompt') return '<div class="promptbox">AI Prompt<br>'+esc((i.prompt||i.title).slice(0,72))+'</div>'; if(['方法','技能','工具','案例'].includes(i.kind)) return '<div class="methodbox">'+esc(i.kind)+'<br>'+esc((i.summary||i.note||i.prompt||i.title).slice(0,72))+'</div>'; return '<div class="blank">'+esc(i.kind)+'<br>'+esc(i.category)+'</div>'; }
@@ -689,7 +936,7 @@
     function openItem(id){ selectedId=id; const i=normalize(selected()); if(!i) return; $('#editPreview').innerHTML=visual(i); $('#editForm').innerHTML='<div class="grid-2"><div><div class="label">标题</div><input id="eTitle" value="'+attr(i.title)+'"></div><div><div class="label">收藏类型</div><select id="eKind">'+kinds.map(k=>'<option '+(k===i.kind?'selected':'')+'>'+esc(k)+'</option>').join('')+'</select></div></div><div><div class="label">分类</div><select id="eCategory">'+categories.map(c=>'<option '+(c===i.category?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><div class="label">链接</div><input id="eUrl" value="'+attr(i.url)+'">'+(i.url?'<a class="source" href="'+attr(i.url)+'" target="_blank">打开链接：'+esc(host(i.url))+'</a>':'')+'</div><div><div class="label">标签，用逗号分隔</div><input id="eTags" value="'+attr(i.tags.join(', '))+'"></div><div><div class="label">项目介绍 / 摘要</div><textarea id="eSummary" placeholder="项目背景、设计目标、视觉特点或链接读取到的网页介绍。">'+esc(i.summary)+'</textarea></div><div class="'+(isAiContext(i.kind,i.category)?'':'hide')+'" id="ePromptBox"><div class="label">AI Prompt / 风格关键词（可选）</div><textarea id="ePrompt" placeholder="只有 AI 生图参考需要填写。">'+esc(i.prompt)+'</textarea></div><div><div class="label">我的判断</div><textarea id="eNote">'+esc(i.note)+'</textarea></div>'; ['Title','Url','Summary','Prompt','Note'].forEach(k=>$('#e'+k).oninput=updateEdit); $('#eKind').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eCategory').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eTags').oninput=updateEdit; $('#drawer').classList.add('show'); }
     function updateEdit(){ const i=selected(); if(!i) return; Object.assign(i,{ title:$('#eTitle').value, kind:$('#eKind').value, category:$('#eCategory').value, url:$('#eUrl').value, tags:tagsFrom($('#eTags').value), summary:$('#eSummary').value, prompt:$('#ePrompt').value, note:$('#eNote').value }); saveItems(); render(); }
     function closeDrawer(){ $('#drawer').classList.remove('show'); }
-    async function deleteSelected(){ if(!selectedId) return; const item=selected(); items=items.filter(i=>i.id!==selectedId); saveItems(); closeDrawer(); render(); if(cloudReady && currentUser){ if(item?.imagePath) await supabaseClient.storage.from('atlas-assets').remove([item.imagePath]); await supabaseClient.from('library_items').delete().eq('user_id',currentUser.id).eq('id',selectedId); setCloudStatus('ready','已同步'); } }
+    function deleteSelected(){ if(!selectedId) return; const item=selected(); items=items.filter(i=>i.id!==selectedId); if(cloudReady && currentUser && item?.imagePath) pendingRemovedPaths.add(item.imagePath); saveItems(); closeDrawer(); render(); }
     function exportData(){ const blob=new Blob([JSON.stringify(items.map(normalize),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='atlas-library.json'; a.click(); URL.revokeObjectURL(a.href); }
     function importData(file){ const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw Error(); items=data.map(normalize); saveItems(); render(); } catch(e){ alert('导入失败，文件格式不对'); } }; r.readAsText(file); }
     init();
