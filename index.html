@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Atlas - 个人参考收藏库</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e9eaec;
+      --page-bg: #f7f7f8;
+      --surface: rgba(255,255,255,.74);
+      --surface-solid: #ffffff;
+      --elevated: #fbfbfc;
+      --stage: #ffffff;
+      --stage-soft: #f1f3f5;
+      --wall: #050505;
+      --wall-muted: #3b3b3d;
+      --wall-text: #f5f5f7;
+      --wall-dim: rgba(245,245,247,.66);
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --subtle: #86868b;
+      --line: rgba(0,0,0,.12);
+      --soft-line: rgba(0,0,0,.07);
+      --field: #fbfbfd;
+      --accent: #0071e3;
+      --accent-soft: rgba(0,113,227,.1);
+      --danger: #b42318;
+      --shadow: 0 26px 80px rgba(0,0,0,.08);
+      --soft-shadow: 0 14px 36px rgba(0,0,0,.06);
+      --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #000000;
+      --page-bg: #09090a;
+      --surface: rgba(28,28,30,.78);
+      --surface-solid: #1c1c1e;
+      --elevated: #242426;
+      --stage: #0d0d0f;
+      --stage-soft: #1a1a1d;
+      --wall: #f5f5f7;
+      --wall-muted: #d9d9dd;
+      --wall-text: #111114;
+      --wall-dim: rgba(17,17,20,.62);
+      --text: #f5f5f7;
+      --muted: #a1a1a6;
+      --subtle: #737378;
+      --line: rgba(255,255,255,.16);
+      --soft-line: rgba(255,255,255,.09);
+      --field: #111113;
+      --accent: #0a84ff;
+      --accent-soft: rgba(10,132,255,.16);
+      --danger: #ff9f9a;
+      --shadow: 0 30px 78px rgba(0,0,0,.42);
+      --soft-shadow: 0 18px 42px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); letter-spacing: 0; }
+    body { transition: background .2s ease, color .2s ease; background: radial-gradient(circle at 50% -10%, rgba(255,255,255,.85), transparent 34%), var(--bg); }
+    [data-theme="dark"] body { background: radial-gradient(circle at 50% -10%, rgba(255,255,255,.08), transparent 34%), var(--bg); }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--soft-line); border-radius: var(--radius); background: var(--field); color: var(--text); outline: none;
+    }
+    input, select { height: 42px; padding: 0 13px; }
+    textarea { min-height: 86px; resize: vertical; padding: 11px 13px; line-height: 1.58; }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    h1, h2, h3, p { overflow-wrap: anywhere; }
+    h1 { margin: 0; font-size: 26px; line-height: 1.08; font-weight: 700; }
+    h2 { margin: 0; font-size: 18px; line-height: 1.22; font-weight: 680; }
+    h3 { margin: 0; font-size: 14px; line-height: 1.3; font-weight: 650; }
+    p { line-height: 1.6; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 12px 24px; background: color-mix(in srgb, var(--bg), transparent 18%); border-bottom: 1px solid var(--soft-line); backdrop-filter: blur(24px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--text); color: var(--bg); font-weight: 800; }
+    .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px;
+      border: 1px solid var(--soft-line); border-radius: 999px; background: var(--surface-solid); color: var(--text); white-space: nowrap; box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    }
+    .btn.primary { background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 650; }
+    .btn.danger { color: var(--danger); }
+    .btn.small { min-height: 31px; padding: 0 10px; font-size: 12px; }
+    .theme-toggle { min-width: 82px; }
+    .page { max-width: 1320px; margin: 0 auto; padding: 24px; }
+    .hero {
+      position: relative; min-height: 560px; display: grid; align-items: center; justify-items: center; gap: 22px; overflow: hidden;
+      margin: 22px 0 18px; padding: 78px 36px 148px; text-align: center; border: 1px solid rgba(255,255,255,.6);
+      border-radius: 34px; background: var(--stage); box-shadow: var(--shadow);
+    }
+    [data-theme="dark"] .hero { border-color: rgba(255,255,255,.1); }
+    .hero::before {
+      content: ""; position: absolute; left: 50%; bottom: -74px; width: min(860px, 86%); height: 180px; transform: translateX(-50%);
+      background:
+        linear-gradient(110deg, #101014 0 16%, transparent 16% 19%, #d8dbdf 19% 36%, transparent 36% 39%, #f4df2a 39% 54%, transparent 54% 57%, #f24f93 57% 72%, transparent 72% 75%, #35d45c 75% 90%, transparent 90%),
+        linear-gradient(#fff,#fff);
+      border-radius: 10px; filter: drop-shadow(0 24px 36px rgba(0,0,0,.16)); opacity: .98; rotate: -3deg;
+    }
+    .hero::after {
+      content: ""; position: absolute; right: max(32px, 9%); bottom: 68px; width: 118px; height: 78px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--stage-soft), color-mix(in srgb, var(--stage-soft), #000 10%)); box-shadow: 0 22px 32px rgba(0,0,0,.16); rotate: 8deg;
+    }
+    .hero > div:first-child { position: relative; z-index: 1; display: grid; justify-items: center; }
+    .hero > div:first-child::before {
+      content: "Atlas Library"; display: inline-flex; min-height: 24px; align-items: center; margin-bottom: 18px; padding: 0 10px;
+      border: 1px solid var(--soft-line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 11px; font-weight: 650;
+    }
+    .hero h1 { max-width: 760px; font-size: 48px; line-height: 1.02; letter-spacing: 0; font-weight: 760; }
+    .hero p { max-width: 620px; margin: 14px 0 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+    .stats { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, minmax(92px, 1fr)); gap: 8px; width: min(620px, 100%); }
+    .stat { padding: 11px 12px; border: 1px solid var(--soft-line); border-radius: 999px; background: color-mix(in srgb, var(--surface-solid), transparent 10%); backdrop-filter: blur(18px); }
+    .stat b { display: block; font-size: 18px; line-height: 1; }
+    .stat span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+    .panel { background: var(--surface); border: 1px solid var(--soft-line); border-radius: var(--radius); box-shadow: var(--soft-shadow); backdrop-filter: blur(18px); }
+    .capture { display: grid; grid-template-columns: minmax(280px,.62fr) minmax(420px,1.38fr); gap: 12px; margin: 0 0 18px; }
+    .drop {
+      position: relative; min-height: 340px; display: grid; place-items: center; padding: 24px; text-align: center; overflow: hidden;
+      background: linear-gradient(180deg, var(--surface-solid), var(--elevated)); border: 1px dashed var(--line); border-radius: 18px;
+    }
+    .drop.drag { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .drop strong { display: block; margin-bottom: 8px; font-size: 22px; letter-spacing: 0; }
+    .drop p { max-width: 390px; margin: 0 auto 14px; color: var(--muted); font-size: 13px; }
+    .hint { display: inline-flex; min-height: 28px; align-items: center; padding: 0 10px; border-radius: 999px; background: var(--field); color: var(--muted); font-size: 12px; }
+    .preview-img { width: 100%; height: 100%; object-fit: contain; background: var(--field); }
+    .form { padding: 16px; display: grid; gap: 11px; }
+    .quick-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .quick-btn {
+      min-height: 34px; padding: 0 11px; border: 1px solid var(--soft-line); border-radius: 999px;
+      background: var(--surface-solid); color: var(--text); font-size: 12px;
+    }
+    .quick-btn:hover, .quick-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .label { margin-bottom: 5px; color: var(--muted); font-size: 12px; }
+    .field-help { margin-top: 5px; color: var(--subtle); font-size: 11px; line-height: 1.45; }
+    .hide { display: none !important; }
+    .link-field { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+    .analysis { display: none; gap: 10px; padding: 10px; border: 1px solid var(--soft-line); border-radius: var(--radius); background: var(--field); }
+    .analysis.show { display: grid; }
+    .analysis.loading { color: var(--muted); font-size: 12px; }
+    .analysis-card { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: stretch; }
+    .analysis-cover { min-height: 86px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--soft-line); border-radius: var(--radius); background: var(--surface-solid); color: var(--muted); font-size: 12px; text-align: center; }
+    .analysis-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .analysis-title { margin: 0 0 5px; font-size: 13px; font-weight: 680; }
+    .analysis-desc { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .analysis-meta { margin-top: 7px; color: var(--subtle); font-size: 11px; }
+    .analysis-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      min-height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-solid); color: var(--muted); font-size: 12px;
+    }
+    .chip.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .filters { position: relative; display: grid; grid-template-columns: minmax(260px, .82fr) minmax(420px, 1.18fr); gap: 12px; align-items: start; padding: 14px; margin: 18px 0 0; border-radius: 18px 18px 0 0; }
+    .filter-side { display: grid; gap: 8px; }
+    .count { margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .library { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; padding: 18px; border-radius: 0 0 26px 26px; background: var(--wall); }
+    .library::before { content: "Collection Wall"; grid-column: 1 / -1; color: var(--wall-dim); font-size: 12px; font-weight: 680; letter-spacing: 0; text-transform: uppercase; padding: 6px 2px 10px; }
+    .card { overflow: hidden; padding: 0; text-align: left; border: 1px solid rgba(255,255,255,.1); border-radius: var(--radius); background: color-mix(in srgb, var(--wall), #fff 9%); color: var(--wall-text); box-shadow: 0 18px 34px rgba(0,0,0,.18); transition: transform .18s ease, border-color .18s ease; }
+    [data-theme="dark"] .card { background: color-mix(in srgb, var(--wall), #000 6%); border-color: rgba(0,0,0,.08); }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .thumb { height: 186px; display: grid; place-items: center; overflow: hidden; background: var(--wall-muted); }
+    .card:nth-child(4n+2) .thumb { height: 224px; }
+    .card:nth-child(5n+3) .thumb { height: 154px; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .blank, .linkbox, .promptbox, .methodbox { width: 100%; height: 100%; display: grid; place-items: center; padding: 18px; text-align: center; color: var(--wall-dim); font-size: 13px; }
+    .linkbox { color: var(--accent); }
+    .promptbox { color: #bf5af2; }
+    .methodbox { color: #30b0c7; }
+    .card-body { padding: 12px; }
+    .badge { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; margin-bottom: 8px; }
+    .title { margin: 0 0 6px; font-size: 14px; font-weight: 680; color: inherit; }
+    .note { min-height: 38px; margin: 0 0 9px; color: color-mix(in srgb, currentColor, transparent 38%); font-size: 12px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { min-height: 21px; display: inline-flex; align-items: center; padding: 0 7px; border: 1px solid color-mix(in srgb, currentColor, transparent 82%); border-radius: 999px; color: color-mix(in srgb, currentColor, transparent 26%); font-size: 11px; }
+    .empty { grid-column: 1/-1; padding: 34px; text-align: center; color: var(--wall-dim); border: 1px dashed rgba(255,255,255,.18); border-radius: var(--radius); background: color-mix(in srgb, var(--wall), #fff 8%); }
+    .drawer { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; background: rgba(0,0,0,.48); z-index: 30; }
+    .drawer.show { display: grid; }
+    .editor { width: min(840px,100%); max-height: 92vh; overflow: auto; padding: 14px; }
+    .editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .editor-grid { display: grid; grid-template-columns: minmax(250px,.78fr) minmax(320px,1.22fr); gap: 12px; }
+    .big-preview { min-height: 360px; display: grid; place-items: center; border: 1px solid var(--soft-line); border-radius: var(--radius); overflow: hidden; background: var(--field); }
+    .big-preview img { width: 100%; height: 100%; max-height: 560px; object-fit: contain; }
+    .editor-form { display: grid; gap: 10px; }
+    .source { color: var(--accent); font-size: 12px; text-decoration: none; word-break: break-all; }
+    @media (max-width: 900px) { .topbar { align-items: flex-start; flex-direction: column; } .hero { min-height: 500px; padding: 64px 18px 132px; border-radius: 24px; } .hero h1 { font-size: 34px; } .stats { grid-template-columns: repeat(2, minmax(0,1fr)); min-width: 0; width: 100%; } .capture, .grid-2, .grid-3, .filters, .editor-grid, .analysis-card, .link-field { grid-template-columns: 1fr; } .page { padding: 12px; } .library { grid-template-columns: 1fr; padding: 12px; } .top-actions { width: 100%; justify-content: flex-start; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">A</div>
+      <div><h1>Atlas</h1><small>好的设计、审美、技能、工具与方法</small></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn theme-toggle" id="themeBtn">深色</button>
+      <button class="btn" id="exportBtn">导出</button>
+      <button class="btn" id="importBtn">导入</button>
+      <button class="btn danger" id="clearBtn">清空</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>你的私人灵感与能力收藏夹。</h1>
+        <p>图片、链接、AI Prompt、工具、技能、方法都能保存。先快速放进来，再用分类、标签和搜索慢慢整理。</p>
+      </div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="capture">
+      <div class="drop panel" id="drop">
+        <input id="fileInput" type="file" accept="image/*" />
+        <div id="dropContent">
+          <strong>添加图片参考</strong>
+          <p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p>
+          <span class="hint">本地保存，不上传服务器</span>
+        </div>
+      </div>
+      <div class="form panel">
+        <div>
+          <div class="label">快速保存为</div>
+          <div class="quick-row" id="quickKinds">
+            <button class="quick-btn" data-kind="设计项目" data-category="视觉设计" data-tags="设计,视觉,作品集">设计项目</button>
+            <button class="quick-btn" data-kind="图片" data-category="好的设计" data-tags="设计,审美">设计参考</button>
+            <button class="quick-btn" data-kind="案例" data-category="案例拆解" data-tags="案例拆解,拆解,可复用">案例拆解</button>
+            <button class="quick-btn" data-kind="设计项目" data-category="作品集参考" data-tags="作品集,提案,商业价值">作品集</button>
+            <button class="quick-btn" data-kind="AI Prompt" data-category="AI生图风格参考" data-tags="AI生图参考,Prompt,关键词">AI 风格参考</button>
+            <button class="quick-btn" data-kind="工具" data-category="好的工具" data-tags="工具,效率">好工具</button>
+            <button class="quick-btn" data-kind="技能" data-category="好的技能" data-tags="技能,方法">好技能</button>
+            <button class="quick-btn" data-kind="方法" data-category="好的方法" data-tags="方法,系统化">好方法</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div><div class="label">标题</div><input id="titleInput" placeholder="例如：适合学习的 Figma 插件"></div>
+          <div><div class="label">收藏类型</div><select id="kindInput"></select></div>
+          <div><div class="label">分类</div><select id="categoryInput"></select></div>
+        </div>
+        <div>
+          <div class="label">链接</div>
+          <div class="link-field"><input id="urlInput" placeholder="网页、工具、教程、作品、AI 图片来源链接"><button class="btn" id="analyzeBtn" type="button">分析链接</button></div>
+          <div class="analysis" id="analysisPanel"></div>
+        </div>
+        <div><div class="label">项目介绍 / 摘要</div><textarea id="summaryInput" placeholder="链接分析读到的介绍会放这里。也可以手动写：这是哪个项目、解决什么问题、视觉特点是什么。"></textarea><div class="field-help">这是作品、案例、工具或方法本身的说明，不等于 AI Prompt。</div></div>
+        <div id="aiPromptBox"><div class="label" id="promptLabel">AI Prompt / 风格关键词（可选）</div><textarea id="promptInput" placeholder="只有 AI 参考需要写：原始 Prompt、负面词、模型、风格关键词或生成参数。"></textarea><div class="field-help" id="promptHelp">普通设计项目不需要填写 AI 内容。</div></div>
+        <div><div class="label">预设标签</div><div class="chips" id="presetTags"></div></div>
+        <div><div class="label">我的判断</div><textarea id="noteInput" placeholder="好在哪里？可复用到作品集、提案或练习的哪一部分？可以学习构图、配色、叙事、交互还是商业表达？"></textarea></div>
+        <button class="btn primary" id="saveBtn">保存</button>
+      </div>
+    </section>
+
+    <section class="filters panel">
+      <div><input id="searchInput" placeholder="搜索标题、链接、Prompt、工具名、技能、标签、备注"><div class="count" id="countText"></div></div>
+      <div class="filter-side"><div class="chips" id="kindFilters"></div><div class="chips" id="categoryFilters"></div><div class="chips" id="tagFilters"></div></div>
+    </section>
+
+    <section class="library" id="library"></section>
+  </main>
+
+  <div class="drawer" id="drawer">
+    <div class="editor panel">
+      <div class="editor-head"><h2>编辑收藏</h2><div class="top-actions"><button class="btn small danger" id="deleteBtn">删除</button><button class="btn small" id="closeBtn">关闭</button></div></div>
+      <div class="editor-grid"><div class="big-preview" id="editPreview"></div><div class="editor-form" id="editForm"></div></div>
+    </div>
+  </div>
+  <input id="importFile" type="file" accept="application/json" hidden>
+
+  <script>
+    const storeKey = 'atlas-universal-library-v4';
+    const oldKeys = ['visual-atlas-reference-box-v3'];
+    const kinds = ['设计项目','图片','链接','AI Prompt','工具','技能','方法','案例','文章','灵感'];
+    const categories = ['好的设计','好的审美','好的技能','好的工具','好的方法','IP形象','品牌设计','视觉设计','产品设计','UI / UX','网页 / 产品参考','包装设计','运营海报','字体 / 标志','插画 / 3D参考','动效参考','摄影 / 影像参考','空间 / 展陈','作品集参考','案例拆解','AI生图风格参考','AI关键词 / Prompt','版式参考','配色 / 材质','待整理'];
+    const presets = ['设计','审美','技能','工具','方法','IP','品牌','视觉','产品','UI','UX','网页','包装','海报','字体','标志','动效','摄影','插画','3D','AIGC','作品集','案例拆解','拆解','提案','可复用','趋势','面试','商业价值','AI生图参考','Prompt','关键词','Midjourney','Stable Diffusion','Figma','效率','构图','配色','光影','材质','版式','高级感','极简','系统化'];
+    const demo = [
+      {id:'d1',kind:'AI Prompt',title:'暗色高级界面 Prompt',category:'AI生图风格参考',url:'',prompt:'dark premium interface, editorial layout, precise grid, subtle glow, high-end visual system',tags:['AI生图参考','Prompt','UI','高级感'],note:'以后做工具型网站或资料库界面时可以复用这一组风格关键词。',image:'',createdAt:Date.now()-60000},
+      {id:'d2',kind:'工具',title:'一个值得研究的设计工具',category:'好的工具',url:'https://www.figma.com',prompt:'多人协作、组件系统、插件生态、设计交付流程',tags:['工具','Figma','效率','系统化'],note:'收藏工具不只是记名字，要记录它解决的问题和可学习的产品结构。',image:'',createdAt:Date.now()-50000},
+      {id:'d3',kind:'方法',title:'建立参考库的方法',category:'好的方法',url:'',prompt:'先收集，不急着分类；每条记录补充用途、可复用点、适合场景；每周做一次标签整理。',tags:['方法','系统化','审美'],note:'这是让收藏真正变成能力的方式。',image:'',createdAt:Date.now()-40000}
+    ];
+    let items = loadItems();
+    let pendingImage = '';
+    let activeKind = '全部';
+    let activeCategory = '全部';
+    let activeTag = '全部';
+    let selectedId = '';
+    let linkAnalysis = null;
+    let analyzeTimer = 0;
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    function loadItems(){
+      try { const current = JSON.parse(localStorage.getItem(storeKey) || 'null'); if (Array.isArray(current)) return current; } catch(e) {}
+      for (const key of oldKeys) { try { const old = JSON.parse(localStorage.getItem(key) || 'null'); if (Array.isArray(old)) return old.map(normalize); } catch(e) {} }
+      return demo;
+    }
+    function normalize(item){ const kind=item.kind||guessKind(item); const category=item.category||'待整理'; const ai=isAiContext(kind, category); return { id:item.id||uid(), kind, title:item.title||'未命名收藏', category, url:item.url||'', summary:item.summary || (!ai ? item.prompt || '' : ''), prompt: ai ? item.prompt||'' : '', tags:item.tags||['待整理'], note:item.note||'', image:item.image||'', createdAt:item.createdAt||Date.now() }; }
+    function guessKind(item){ if(item.category && /IP|品牌|视觉|产品|UI|UX|包装|作品集/.test(item.category)) return '设计项目'; if(item.prompt && item.category && item.category.includes('Prompt')) return 'AI Prompt'; if(item.url) return '链接'; if(item.image) return '图片'; return '灵感'; }
+    function saveItems(){ localStorage.setItem(storeKey, JSON.stringify(items.map(normalize))); }
+    function uid(){ return 'a-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+    function esc(v){ return String(v||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function attr(v){ return esc(v).replace(/'/g,'&#39;'); }
+    function tagsFrom(v){ return String(v||'').split(/[,，\s]+/).map(t=>t.trim()).filter(Boolean).slice(0,14); }
+    function host(url){ try { return new URL(url).host; } catch(e) { return url || ''; } }
+    function selected(){ return items.find(i=>i.id===selectedId); }
+    function normalizeUrl(value){ value = String(value||'').trim(); return !/^https?:\/\//i.test(value) && /^[a-z0-9.-]+\.[a-z]{2,}([/:?#].*)?$/i.test(value) ? 'https://' + value : value; }
+    function isValidUrl(value){ try { return /^https?:$/.test(new URL(normalizeUrl(value)).protocol); } catch(e) { return false; } }
+
+    function init(){
+      applyTheme(localStorage.getItem('atlas-theme') || 'light');
+      $('#themeBtn').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      $('#kindInput').innerHTML = kinds.map(k=>'<option>'+esc(k)+'</option>').join('');
+      $('#categoryInput').innerHTML = categories.map(c=>'<option>'+esc(c)+'</option>').join('');
+      $('#kindInput').onchange = updatePromptField;
+      $('#categoryInput').onchange = updatePromptField;
+      $('#presetTags').innerHTML = presets.map(t=>'<button class="chip" type="button" data-tag="'+esc(t)+'">'+esc(t)+'</button>').join('');
+      $$('#presetTags .chip').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));
+      $$('#quickKinds .quick-btn').forEach(btn=>btn.onclick=()=>applyQuickChoice(btn));
+      $('#saveBtn').onclick = addItem;
+      $('#searchInput').oninput = render;
+      $('#urlInput').oninput = () => { const value = normalizeUrl($('#urlInput').value.trim()); if(/^https?:\/\//.test(value) && !pendingImage && $('#kindInput').value === '图片') $('#kindInput').value = '链接'; updatePromptField(); scheduleLinkAnalysis(); };
+      $('#analyzeBtn').onclick = () => analyzeLink(true);
+      $('#fileInput').onchange = e => e.target.files[0] && setImage(e.target.files[0]);
+      $('#exportBtn').onclick = exportData;
+      $('#importBtn').onclick = () => $('#importFile').click();
+      $('#importFile').onchange = e => e.target.files[0] && importData(e.target.files[0]);
+      $('#clearBtn').onclick = () => { if(confirm('清空当前浏览器里的收藏？')) { items=[]; saveItems(); render(); } };
+      $('#closeBtn').onclick = closeDrawer;
+      $('#drawer').onclick = e => { if(e.target.id === 'drawer') closeDrawer(); };
+      $('#deleteBtn').onclick = deleteSelected;
+      const drop = $('#drop');
+      ['dragenter','dragover'].forEach(type=>drop.addEventListener(type,e=>{ e.preventDefault(); drop.classList.add('drag'); }));
+      ['dragleave','drop'].forEach(type=>drop.addEventListener(type,e=>{ e.preventDefault(); drop.classList.remove('drag'); }));
+      drop.addEventListener('drop',e=>{ const file = Array.from(e.dataTransfer.files).find(f=>f.type.startsWith('image/')); if(file) setImage(file); });
+      document.addEventListener('paste', e => {
+        const imageItem = Array.from(e.clipboardData?.items || []).find(item=>item.type.startsWith('image/'));
+        if(imageItem){ setImage(imageItem.getAsFile()); return; }
+        const text = e.clipboardData?.getData('text')?.trim();
+        if(text && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
+          if(/^https?:\/\//.test(text) || /^www\./i.test(text)) { $('#urlInput').value = text; $('#urlInput').dispatchEvent(new Event('input')); }
+          else if(isAiContext($('#kindInput').value, $('#categoryInput').value)) $('#promptInput').value = text;
+          else $('#summaryInput').value = text;
+        }
+      });
+      saveItems();
+      updatePromptField();
+      render();
+    }
+    function applyTheme(theme){ document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; localStorage.setItem('atlas-theme', document.documentElement.dataset.theme); $('#themeBtn').textContent = theme === 'dark' ? '浅色' : '深色'; }
+    function scheduleLinkAnalysis(){
+      clearTimeout(analyzeTimer);
+      linkAnalysis = null;
+      const value = normalizeUrl($('#urlInput').value.trim());
+      if(!value){ renderAnalysis('idle'); return; }
+      if(!isValidUrl(value)){ renderAnalysis('hint','请输入完整链接，例如 https://example.com'); return; }
+      analyzeTimer = setTimeout(()=>analyzeLink(false), 900);
+    }
+    async function analyzeLink(manual){
+      const url = normalizeUrl($('#urlInput').value.trim());
+      if(!isValidUrl(url)){ renderAnalysis('hint','请输入完整链接，例如 https://example.com'); return; }
+      $('#urlInput').value = url;
+      if(!pendingImage && $('#kindInput').value === '图片') $('#kindInput').value = '链接';
+      updatePromptField();
+      renderAnalysis('loading', manual ? '正在分析链接...' : '正在自动分析链接...');
+      try {
+        let meta = await readDirectMeta(url).catch(()=>null);
+        if(!meta || (!meta.title && !meta.image && !meta.description)) meta = await readMicrolinkMeta(url).catch(()=>null);
+        if(!meta || (!meta.title && !meta.image && !meta.description)) throw new Error('no-meta');
+        linkAnalysis = enrichMeta(meta, url);
+        renderAnalysis('ready', linkAnalysis);
+      } catch(e) {
+        renderAnalysis('error','这个网站暂时无法自动读取封面，可能是对跨站抓取有限制。你仍然可以手动上传图片或直接保存链接。');
+      }
+    }
+    async function fetchWithTimeout(url, options, ms){
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), ms || 6500);
+      try { return await fetch(url, Object.assign({}, options || {}, {signal: ctrl.signal})); }
+      finally { clearTimeout(timer); }
+    }
+    async function readDirectMeta(url){
+      const res = await fetchWithTimeout(url, {mode:'cors'}, 6500);
+      if(!res.ok) throw new Error('bad-response');
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const meta = name => doc.querySelector('meta[property="'+name+'"], meta[name="'+name+'"]')?.content || '';
+      const image = meta('og:image') || meta('twitter:image') || doc.querySelector('link[rel="image_src"]')?.href || '';
+      return { title: meta('og:title') || meta('twitter:title') || doc.title || '', description: meta('og:description') || meta('twitter:description') || meta('description') || '', image: absolutize(image, url), source: '网页元数据' };
+    }
+    async function readMicrolinkMeta(url){
+      const res = await fetchWithTimeout('https://api.microlink.io/?url=' + encodeURIComponent(url), {mode:'cors'}, 8000);
+      if(!res.ok) throw new Error('bad-api');
+      const json = await res.json();
+      const data = json.data || {};
+      return { title: data.title || '', description: data.description || '', image: data.image?.url || data.screenshot?.url || data.logo?.url || '', source: '链接分析服务' };
+    }
+    function absolutize(value, base){ try { return value ? new URL(value, base).href : ''; } catch(e) { return value || ''; } }
+    function enrichMeta(meta, url){
+      const text = [meta.title, meta.description, url].join(' ').toLowerCase();
+      const result = { url, title: meta.title || host(url), description: meta.description || '', image: meta.image || '', source: meta.source || '分析结果', kind: '链接', category: '好的设计', tags: ['网页','设计'] };
+      const promptContext = /prompt|midjourney|stable diffusion|comfyui|negative prompt|seed|lora|checkpoint|模型参数|生成参数|提示词|生图关键词|ai关键词|ai prompt/.test(text);
+      const designProjectContext = /zcool|behance|dribbble|portfolio|works?|project|case|设计项目|作品|作品集|案例|创作合集|设计师|品牌|视觉|包装|海报|字体|标志|插画|三维|3d|产品|界面|ui|ux|ip|角色|形象|aigc/.test(text);
+      if(promptContext){ result.kind='AI Prompt'; result.category='AI生图风格参考'; result.tags=['AI生图参考','Prompt','关键词']; }
+      else if(designProjectContext){
+        result.kind='设计项目'; result.category=designCategoryFrom(text); result.tags=designTagsFrom(text, result.category);
+      }
+      else if(/figma|plugin|tool|app|software|工具|插件|效率/.test(text)){ result.kind='工具'; result.category='好的工具'; result.tags=['工具','效率']; }
+      else if(/tutorial|course|learn|skill|教程|课程|技巧|技能/.test(text)){ result.kind='技能'; result.category='好的技能'; result.tags=['技能','方法']; }
+      else if(/method|workflow|process|system|方法|流程|系统/.test(text)){ result.kind='方法'; result.category='好的方法'; result.tags=['方法','系统化']; }
+      else if(/website|web|layout|网页|版式/.test(text)){ result.kind='链接'; result.category='网页 / 产品参考'; result.tags=['网页','设计','版式']; }
+      return result;
+    }
+    function designCategoryFrom(text){
+      if(/ip|角色|形象|吉祥物/.test(text)) return 'IP形象';
+      if(/brand|branding|品牌/.test(text)) return '品牌设计';
+      if(/ui|ux|app|界面|交互/.test(text)) return 'UI / UX';
+      if(/product|产品/.test(text)) return '产品设计';
+      if(/packaging|包装/.test(text)) return '包装设计';
+      if(/poster|海报|运营/.test(text)) return '运营海报';
+      if(/logo|font|type|字体|标志/.test(text)) return '字体 / 标志';
+      if(/motion|animation|动效/.test(text)) return '动效参考';
+      if(/photo|video|摄影|影像/.test(text)) return '摄影 / 影像参考';
+      if(/space|exhibition|空间|展陈/.test(text)) return '空间 / 展陈';
+      if(/illustration|插画|3d|三维|渲染|建模|aigc/.test(text)) return '插画 / 3D参考';
+      return '视觉设计';
+    }
+    function designTagsFrom(text, category){
+      const tags = ['设计'];
+      const map = [['IP',/ip|角色|形象/],['品牌',/brand|品牌/],['视觉',/视觉|design|作品|zcool|behance|dribbble/],['产品',/product|产品/],['UI',/ui|界面/],['UX',/ux|交互/],['包装',/packaging|包装/],['海报',/poster|海报/],['字体',/font|type|字体/],['标志',/logo|标志/],['插画',/illustration|插画/],['3D',/3d|三维|渲染|建模/],['AIGC',/aigc/],['作品集',/portfolio|作品集/],['案例拆解',/case|案例/]];
+      map.forEach(([tag, re])=>{ if(re.test(text) && !tags.includes(tag)) tags.push(tag); });
+      if(category && !tags.includes(category.replace(/参考|设计|形象|\s\/\s.*$/g,''))) tags.push(category.split(' ')[0].replace('/',''));
+      return tags.slice(0,6);
+    }
+    function renderAnalysis(state, data){
+      const panel = $('#analysisPanel');
+      if(state === 'idle'){ panel.className = 'analysis'; panel.innerHTML = ''; return; }
+      panel.className = 'analysis show' + (state === 'loading' ? ' loading' : '');
+      if(state === 'loading' || state === 'hint' || state === 'error'){ panel.innerHTML = '<div>'+esc(data)+'</div>'; return; }
+      const cover = data.image ? '<img src="'+attr(data.image)+'" alt="链接封面" referrerpolicy="no-referrer">' : '未找到封面';
+      panel.innerHTML = '<div class="analysis-card"><div class="analysis-cover">'+cover+'</div><div><div class="analysis-title">'+esc(data.title)+'</div><p class="analysis-desc">'+esc(data.description || '没有读取到描述，可以只使用标题和链接。')+'</p><div class="analysis-meta">建议：'+esc(data.kind)+' / '+esc(data.category)+' · '+esc(data.tags.join('、'))+' · '+esc(data.source)+'</div></div></div><div class="analysis-actions"><button class="btn small primary" id="applyAnalysisAll" type="button">应用全部</button><button class="btn small" id="applyAnalysisCover" type="button">只用封面</button><button class="btn small" id="applyAnalysisText" type="button">标题摘要</button><button class="btn small" id="applyAnalysisTags" type="button">分类标签</button></div>';
+      $('#applyAnalysisAll').onclick = () => applyAnalysis('all');
+      $('#applyAnalysisCover').onclick = () => applyAnalysis('cover');
+      $('#applyAnalysisText').onclick = () => applyAnalysis('text');
+      $('#applyAnalysisTags').onclick = () => applyAnalysis('tags');
+    }
+    function applyAnalysis(mode){
+      if(!linkAnalysis) return;
+      if(mode === 'all' || mode === 'text'){
+        if(!$('#titleInput').value.trim()) $('#titleInput').value = linkAnalysis.title;
+        if(!$('#summaryInput').value.trim() && linkAnalysis.description) $('#summaryInput').value = linkAnalysis.description;
+      }
+      if(mode === 'all' || mode === 'cover'){
+        if(linkAnalysis.image){ pendingImage = linkAnalysis.image; $('#dropContent').innerHTML = '<img class="preview-img" src="'+attr(pendingImage)+'" alt="链接封面" referrerpolicy="no-referrer">'; }
+      }
+      if(mode === 'all' || mode === 'tags'){
+        $('#kindInput').value = linkAnalysis.kind;
+        $('#categoryInput').value = linkAnalysis.category;
+        $$('#presetTags .chip').forEach(chip=>chip.classList.toggle('active', linkAnalysis.tags.includes(chip.dataset.tag)));
+        updatePromptField();
+      }
+    }
+    function isAiContext(kind, category){ return kind === 'AI Prompt' || String(category||'').includes('AI'); }
+    function updatePromptField(){
+      const ai = isAiContext($('#kindInput').value, $('#categoryInput').value);
+      $('#aiPromptBox').classList.toggle('hide', !ai);
+      $('#promptLabel').textContent = 'AI Prompt / 风格关键词（可选）';
+      $('#promptInput').placeholder = '把原始 Prompt、负面词、模型、风格关键词或生成参数放这里。';
+      $('#promptHelp').textContent = '只有明确要作为 AI 生图参考时才需要填写；普通设计项目的介绍请放在上面的摘要。';
+    }
+    function applyQuickChoice(btn){
+      $('#kindInput').value = btn.dataset.kind;
+      $('#categoryInput').value = btn.dataset.category;
+      const tags = tagsFrom(btn.dataset.tags);
+      $$('#presetTags .chip').forEach(chip=>chip.classList.toggle('active', tags.includes(chip.dataset.tag)));
+      $$('#quickKinds .quick-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      updatePromptField();
+      if(!$('#titleInput').value.trim()) $('#titleInput').focus();
+    }
+    async function setImage(file){ pendingImage = await imageToData(file); $('#dropContent').innerHTML = '<img class="preview-img" src="'+pendingImage+'" alt="待保存图片">'; if(!$('#titleInput').value.trim()) $('#titleInput').value = file.name.replace(/\.[^.]+$/,''); $('#kindInput').value = '图片'; updatePromptField(); }
+    function imageToData(file){ return new Promise(resolve=>{ const r = new FileReader(); r.onload=()=>{ const img = new Image(); img.onload=()=>{ const max=1500; let w=img.width,h=img.height,s=Math.min(1,max/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); resolve(c.toDataURL('image/jpeg',.86)); }; img.onerror=()=>resolve(r.result); img.src=r.result; }; r.readAsDataURL(file); }); }
+    function activeTags(){ return $$('#presetTags .chip.active').map(b=>b.dataset.tag); }
+    function addItem(){
+      const item = normalize({ id:uid(), kind:$('#kindInput').value, title:$('#titleInput').value.trim(), category:$('#categoryInput').value, url:normalizeUrl($('#urlInput').value.trim()), summary:$('#summaryInput').value.trim(), prompt:$('#promptInput').value.trim(), tags:activeTags(), note:$('#noteInput').value.trim(), image:pendingImage, createdAt:Date.now() });
+      if(!item.title && !item.url && !item.summary && !item.prompt && !item.note && !item.image){ $('#titleInput').focus(); return; }
+      if(!item.title) item.title = item.url ? host(item.url) : item.summary.slice(0,30) || item.prompt.slice(0,30) || item.note.slice(0,30) || '未命名收藏';
+      if(!item.tags.length) item.tags = [item.kind, item.category].filter(Boolean).slice(0,2);
+      items.unshift(item); saveItems(); resetForm(); render(); openItem(item.id);
+    }
+    function resetForm(){ pendingImage=''; linkAnalysis=null; ['titleInput','urlInput','summaryInput','promptInput','noteInput'].forEach(id=>$('#'+id).value=''); $('#kindInput').value='图片'; $('#categoryInput').value='好的设计'; $$('#presetTags .chip').forEach(b=>b.classList.remove('active')); $$('#quickKinds .quick-btn').forEach(b=>b.classList.remove('active')); renderAnalysis('idle'); updatePromptField(); $('#dropContent').innerHTML='<strong>添加图片参考</strong><p>拖拽、点击上传，或复制图片后按 Ctrl + V。也可以不放图片，只收藏链接、技能、工具或方法。</p><span class="hint">本地保存，不上传服务器</span>'; }
+    function filtered(){ const q=$('#searchInput').value.trim().toLowerCase(); return items.map(normalize).filter(i=>{ const kindOk=activeKind==='全部'||i.kind===activeKind; const catOk=activeCategory==='全部'||i.category===activeCategory; const tagOk=activeTag==='全部'||i.tags.includes(activeTag); const text=[i.kind,i.title,i.category,i.url,i.summary,i.prompt,i.note,...i.tags].join(' ').toLowerCase(); return kindOk && catOk && tagOk && (!q || text.includes(q)); }); }
+    function render(){ renderStats(); renderFilters(); renderLibrary(); }
+    function renderStats(){ const data=[['全部',items.length],['图片',items.filter(i=>i.image).length],['链接',items.filter(i=>i.url).length],['AI/技能/工具',items.filter(i=>['AI Prompt','技能','工具','方法'].includes(i.kind)).length]]; $('#stats').innerHTML=data.map(s=>'<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join(''); }
+    function renderFilters(){
+      const existingKinds = ['全部',...kinds.filter(k=>items.some(i=>normalize(i).kind===k))];
+      const existingCategories = ['全部',...categories.filter(c=>items.some(i=>normalize(i).category===c))];
+      const existingTags = ['全部',...new Set(items.flatMap(i=>normalize(i).tags))];
+      $('#kindFilters').innerHTML = existingKinds.map(k=>'<button class="chip '+(k===activeKind?'active':'')+'" data-kind="'+esc(k)+'">'+esc(k)+'</button>').join('');
+      $('#categoryFilters').innerHTML = existingCategories.map(c=>'<button class="chip '+(c===activeCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join('');
+      $('#tagFilters').innerHTML = existingTags.map(t=>'<button class="chip '+(t===activeTag?'active':'')+'" data-tag="'+esc(t)+'">'+esc(t)+'</button>').join('');
+      $$('#kindFilters .chip').forEach(b=>b.onclick=()=>{ activeKind=b.dataset.kind; render(); });
+      $$('#categoryFilters .chip').forEach(b=>b.onclick=()=>{ activeCategory=b.dataset.category; render(); });
+      $$('#tagFilters .chip').forEach(b=>b.onclick=()=>{ activeTag=b.dataset.tag; render(); });
+      $('#countText').textContent = '共 ' + items.length + ' 条，当前显示 ' + filtered().length + ' 条';
+    }
+    function renderLibrary(){ const list=filtered(); $('#library').innerHTML = list.map(card).join('') || '<div class="empty">还没有匹配内容。可以先保存一张图片、一个链接、一段 Prompt、一个工具或一个方法。</div>'; $$('.card').forEach(card=>card.onclick=()=>openItem(card.dataset.id)); }
+    function visual(i){ if(i.image) return '<img src="'+i.image+'" alt="'+esc(i.title)+'">'; if(i.url) return '<div class="linkbox">链接<br>'+esc(host(i.url))+'</div>'; if(i.kind==='AI Prompt') return '<div class="promptbox">AI Prompt<br>'+esc((i.prompt||i.title).slice(0,72))+'</div>'; if(['方法','技能','工具','案例'].includes(i.kind)) return '<div class="methodbox">'+esc(i.kind)+'<br>'+esc((i.summary||i.note||i.prompt||i.title).slice(0,72))+'</div>'; return '<div class="blank">'+esc(i.kind)+'<br>'+esc(i.category)+'</div>'; }
+    function card(i){ return '<button class="card" data-id="'+i.id+'"><div class="thumb">'+visual(i)+'</div><div class="card-body"><span class="badge">'+esc(i.kind)+' / '+esc(i.category)+'</span><h3 class="title">'+esc(i.title)+'</h3><p class="note">'+esc(i.summary||i.note||i.prompt||i.url||'还没有补充说明')+'</p><div class="tag-row">'+i.tags.slice(0,5).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div></div></button>'; }
+    function openItem(id){ selectedId=id; const i=normalize(selected()); if(!i) return; $('#editPreview').innerHTML=visual(i); $('#editForm').innerHTML='<div class="grid-2"><div><div class="label">标题</div><input id="eTitle" value="'+attr(i.title)+'"></div><div><div class="label">收藏类型</div><select id="eKind">'+kinds.map(k=>'<option '+(k===i.kind?'selected':'')+'>'+esc(k)+'</option>').join('')+'</select></div></div><div><div class="label">分类</div><select id="eCategory">'+categories.map(c=>'<option '+(c===i.category?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><div class="label">链接</div><input id="eUrl" value="'+attr(i.url)+'">'+(i.url?'<a class="source" href="'+attr(i.url)+'" target="_blank">打开链接：'+esc(host(i.url))+'</a>':'')+'</div><div><div class="label">标签，用逗号分隔</div><input id="eTags" value="'+attr(i.tags.join(', '))+'"></div><div><div class="label">项目介绍 / 摘要</div><textarea id="eSummary" placeholder="项目背景、设计目标、视觉特点或链接读取到的网页介绍。">'+esc(i.summary)+'</textarea></div><div class="'+(isAiContext(i.kind,i.category)?'':'hide')+'" id="ePromptBox"><div class="label">AI Prompt / 风格关键词（可选）</div><textarea id="ePrompt" placeholder="只有 AI 生图参考需要填写。">'+esc(i.prompt)+'</textarea></div><div><div class="label">我的判断</div><textarea id="eNote">'+esc(i.note)+'</textarea></div>'; ['Title','Url','Summary','Prompt','Note'].forEach(k=>$('#e'+k).oninput=updateEdit); $('#eKind').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eCategory').onchange=()=>{ updateEdit(); $('#ePromptBox').classList.toggle('hide', !isAiContext($('#eKind').value,$('#eCategory').value)); }; $('#eTags').oninput=updateEdit; $('#drawer').classList.add('show'); }
+    function updateEdit(){ const i=selected(); if(!i) return; Object.assign(i,{ title:$('#eTitle').value, kind:$('#eKind').value, category:$('#eCategory').value, url:$('#eUrl').value, tags:tagsFrom($('#eTags').value), summary:$('#eSummary').value, prompt:$('#ePrompt').value, note:$('#eNote').value }); saveItems(); render(); }
+    function closeDrawer(){ $('#drawer').classList.remove('show'); }
+    function deleteSelected(){ if(!selectedId) return; items=items.filter(i=>i.id!==selectedId); saveItems(); closeDrawer(); render(); }
+    function exportData(){ const blob=new Blob([JSON.stringify(items.map(normalize),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='atlas-library.json'; a.click(); URL.revokeObjectURL(a.href); }
+    function importData(file){ const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw Error(); items=data.map(normalize); saveItems(); render(); } catch(e){ alert('导入失败，文件格式不对'); } }; r.readAsText(file); }
+    init();
+  </script>
+</body>
+</html>
